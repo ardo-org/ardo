@@ -1,0 +1,112 @@
+name: Documentation Validation
+on:
+  push:
+    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+  pull_request:
+    paths: ['**.md', 'docs/**', 'scripts/docs/**']
+
+env:
+  MIN_CONSISTENCY_SCORE: '95'
+
+jobs:
+  docs-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Validate Documentation
+        id: validate
+        run: |
+          echo "Running documentation validation..."
+
+          # Run validation and capture output
+          if deno run --allow-read scripts/docs/validate.ts --format json README.md AGENTS.md .specify/memory/constitution.md > validation-result.json 2>&1; then
+            echo "Validation completed successfully"
+          else
+            echo "Validation found issues"
+          fi
+
+          # Extract metrics
+          if [ -f validation-result.json ]; then
+            score=$(cat validation-result.json | grep -o '"consistencyScore":[0-9.]*' | cut -d: -f2)
+            echo "score=${score:-0}" >> $GITHUB_OUTPUT
+
+            errors=$(cat validation-result.json | grep -o '"errorCount":[0-9]*' | cut -d: -f2)
+            echo "errors=${errors:-0}" >> $GITHUB_OUTPUT
+
+            warnings=$(cat validation-result.json | grep -o '"warningCount":[0-9]*' | cut -d: -f2)
+            echo "warnings=${warnings:-0}" >> $GITHUB_OUTPUT
+          else
+            echo "score=0" >> $GITHUB_OUTPUT
+            echo "errors=1" >> $GITHUB_OUTPUT
+            echo "warnings=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Check Consistency Score
+        run: |
+          SCORE="${{ steps.validate.outputs.score }}"
+          echo "Consistency Score: ${SCORE}%"
+          echo "Minimum Required: ${MIN_CONSISTENCY_SCORE}%"
+
+          if (( $(echo "${SCORE} >= ${MIN_CONSISTENCY_SCORE}" | bc -l) )); then
+            echo "✅ Consistency score meets minimum requirement"
+          else
+            echo "❌ Consistency score below minimum requirement"
+            exit 1
+          fi
+
+      - name: Generate Documentation Report
+        if: always()
+        run: |
+          echo "## Documentation Validation Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Consistency Score | ${{ steps.validate.outputs.score }}% |" >> $GITHUB_STEP_SUMMARY
+          echo "| Errors | ${{ steps.validate.outputs.errors }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Warnings | ${{ steps.validate.outputs.warnings }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Minimum Required | ${MIN_CONSISTENCY_SCORE}% |" >> $GITHUB_STEP_SUMMARY
+
+          # Add detailed results if validation file exists
+          if [ -f validation-result.json ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Detailed Results" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+            cat validation-result.json >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  progressive-disclosure:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x
+
+      - name: Generate Progressive Disclosure
+        run: |
+          deno run --allow-read --allow-write scripts/docs/generate-disclosure.ts README.md
+
+      - name: Commit Changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add README.md
+
+          if ! git diff --cached --exit-code; then
+            git commit -m "docs: auto-update progressive disclosure formatting"
+            git push
+          else
+            echo "No changes to commit"
+          fi

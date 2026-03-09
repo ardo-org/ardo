@@ -1,0 +1,10 @@
+{
+  "extends": "markdownlint/style/prettier",
+  "MD013": false,
+  "MD033": {
+    "allowed_elements": ["details", "summary", "br", "kbd"]
+  },
+  "MD041": false,
+  "no-hard-tabs": false,
+  "whitespace": false
+}

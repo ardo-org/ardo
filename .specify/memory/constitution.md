@@ -180,11 +180,36 @@ Claudio is successful when:
 
 ## Governance
 
+### Decision-Making Process
+
+**Feature Evaluation**: All feature requests are evaluated against the core principles:
+1. **Minimalism Check**: Does this add essential functionality or unnecessary complexity?
+2. **UX Impact**: Will this maintain calm, predictable user experience?
+3. **Scope Alignment**: Is this within stated responsibilities or outside scope?
+4. **Technical Standards**: Does this meet quality gates and architectural standards?
+
+**Acceptance Criteria**: Features must satisfy ALL of these requirements:
+- Aligns with at least one core principle without violating others
+- Falls within defined scope responsibilities
+- Includes comprehensive tests and documentation
+- Passes all quality gates
+- Maintains constitutional compliance
+
+**Rejection Criteria**: Features are rejected if they:
+- Violate any core principle (especially minimalism or separation of concerns)
+- Fall outside defined scope boundaries
+- Add unnecessary complexity or configuration
+- Compromise security, predictability, or portability
+
+### Amendment Process
+
 All changes to this constitution MUST be spec-driven and traceable to a user
 story or requirement. Breaking changes require explicit version bumps and
 updated specifications. UX changes MUST preserve Claudio's emotional tone and
 visual identity. Proxy behavior MUST remain Anthropic-compatible unless the spec
 evolves.
+
+### Review Standards
 
 All PRs and reviews must verify compliance with this constitution. Complexity
 must be justified against the core principles. The constitution supersedes all

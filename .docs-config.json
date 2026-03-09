@@ -1,0 +1,26 @@
+{
+  "validation": {
+    "markdownlint": {
+      "configFile": ".markdownlint.jsonc",
+      "enabled": true
+    },
+    "terminology": {
+      "databasePath": "scripts/docs/terminology.json",
+      "severity": "error",
+      "enabled": true
+    },
+    "consistency": {
+      "minimumScore": 95,
+      "weightings": {
+        "markdownLint": 40,
+        "terminology": 40,
+        "linkValidation": 20
+      }
+    }
+  },
+  "progressiveDisclosure": {
+    "enabled": true,
+    "collapsibleLevels": [3, 4, 5, 6],
+    "defaultState": "closed"
+  }
+}

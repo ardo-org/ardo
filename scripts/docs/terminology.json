@@ -1,0 +1,44 @@
+{
+  "version": "1.0.0",
+  "terms": [
+    {
+      "canonical": "GitHub",
+      "incorrect": [],
+      "category": "brand",
+      "caseSensitive": true,
+      "note": "URLs and commands should use correct case"
+    },
+    {
+      "canonical": "TypeScript",
+      "incorrect": ["typescript", "Typescript"],
+      "category": "technology",
+      "caseSensitive": true
+    },
+    {
+      "canonical": "Deno",
+      "incorrect": [],
+      "category": "technology",
+      "caseSensitive": true,
+      "note": "Commands use lowercase, product names use uppercase"
+    },
+    {
+      "canonical": "Claude Code",
+      "incorrect": ["claude code", "Claude code"],
+      "category": "brand",
+      "caseSensitive": true
+    },
+    {
+      "canonical": "API",
+      "incorrect": ["api", "Api"],
+      "category": "acronym",
+      "caseSensitive": true
+    },
+    {
+      "canonical": "CLI",
+      "incorrect": [],
+      "category": "acronym",
+      "caseSensitive": true,
+      "note": "Directory names use lowercase"
+    }
+  ]
+}
