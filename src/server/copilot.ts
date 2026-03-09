@@ -61,7 +61,15 @@ function messagesToText(
 
   for (const msg of request.messages) {
     const label = msg.role === "user" ? "User" : "Assistant";
-    parts.push(`${label}: ${msg.content}`);
+    if (typeof msg.content === "string") {
+      parts.push(`${label}: ${msg.content}`);
+    } else {
+      const text = msg.content
+        .filter((b) => b.type === "text")
+        .map((b) => (b as { type: "text"; text: string }).text)
+        .join(" ");
+      if (text) parts.push(`${label}: ${text}`);
+    }
   }
 
   return parts.join("\n\n");

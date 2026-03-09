@@ -1,7 +1,49 @@
+export interface TextContentBlock {
+  type: "text";
+  text: string;
+}
+
+export interface ToolUseContentBlock {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+}
+
+export interface ToolResultContentBlock {
+  type: "tool_result";
+  tool_use_id: string;
+  content: string | TextContentBlock[];
+  is_error?: boolean;
+}
+
+export type ContentBlock =
+  | TextContentBlock
+  | ToolUseContentBlock
+  | ToolResultContentBlock;
+
 export interface Message {
   role: "user" | "assistant";
-  content: string;
+  content: string | ContentBlock[];
 }
+
+export interface ToolInputSchema {
+  type: "object";
+  properties?: Record<string, unknown>;
+  required?: string[];
+  [key: string]: unknown;
+}
+
+export interface Tool {
+  name: string;
+  description?: string;
+  input_schema: ToolInputSchema;
+}
+
+export type ToolChoice =
+  | { type: "auto" }
+  | { type: "any" }
+  | { type: "tool"; name: string };
 
 export interface ProxyRequest {
   model: string;
@@ -11,11 +53,8 @@ export interface ProxyRequest {
   stream?: boolean;
   temperature?: number;
   top_p?: number;
-}
-
-export interface ContentBlock {
-  type: "text";
-  text: string;
+  tools?: Tool[];
+  tool_choice?: ToolChoice;
 }
 
 export interface Usage {
@@ -29,7 +68,7 @@ export interface ProxyResponse {
   role: "assistant";
   content: ContentBlock[];
   model: string;
-  stop_reason: "end_turn" | "max_tokens" | null;
+  stop_reason: "end_turn" | "max_tokens" | "tool_use" | null;
   stop_sequence: string | null;
   usage: Usage;
 }
@@ -58,6 +97,11 @@ export interface StreamEvent {
   index?: number;
   content_block?: {
     type: "text";
+  } | {
+    type: "tool_use";
+    id: string;
+    name: string;
+    input: Record<string, unknown>;
   };
   delta?: {
     type: "text_delta";

@@ -3,6 +3,7 @@ import type {
   OpenAIChatResponse,
   OpenAIMessage,
   OpenAIStreamChunk,
+  OpenAITool,
 } from "./types.ts";
 import {
   COPILOT_API_VERSION,
@@ -13,9 +14,13 @@ import {
 import { resolveModel } from "./models.ts";
 import { getToken } from "./token.ts";
 import type {
+  ContentBlock,
   ProxyRequest,
   ProxyResponse,
   StreamEvent,
+  TextContentBlock,
+  Tool,
+  ToolChoice,
 } from "../server/types.ts";
 import { generateMessageId } from "../server/types.ts";
 
@@ -54,12 +59,91 @@ function toOpenAIMessages(req: ProxyRequest): OpenAIMessage[] {
     messages.push({ role: "system", content: req.system });
   }
   for (const msg of req.messages) {
-    messages.push({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    });
+    if (typeof msg.content === "string") {
+      messages.push({ role: msg.role, content: msg.content });
+      continue;
+    }
+
+    const blocks = msg.content;
+
+    if (msg.role === "assistant") {
+      const textParts: string[] = [];
+      const toolCalls: NonNullable<OpenAIMessage["tool_calls"]> = [];
+
+      for (const block of blocks) {
+        if (block.type === "text") {
+          textParts.push(block.text);
+        } else if (block.type === "tool_use") {
+          toolCalls.push({
+            id: block.id,
+            type: "function",
+            function: {
+              name: block.name,
+              arguments: JSON.stringify(block.input),
+            },
+          });
+        }
+      }
+
+      const message: OpenAIMessage = {
+        role: "assistant",
+        content: textParts.length > 0 ? textParts.join("\n") : null,
+      };
+      if (toolCalls.length > 0) {
+        message.tool_calls = toolCalls;
+      }
+      messages.push(message);
+    } else {
+      // user role: separate text blocks from tool_result blocks
+      const textParts: string[] = [];
+
+      for (const block of blocks) {
+        if (block.type === "text") {
+          textParts.push(block.text);
+        } else if (block.type === "tool_result") {
+          // tool_result becomes a role:"tool" message
+          let resultContent: string;
+          if (typeof block.content === "string") {
+            resultContent = block.content;
+          } else {
+            resultContent = block.content
+              .filter((b): b is TextContentBlock => b.type === "text")
+              .map((b) => b.text)
+              .join("\n");
+          }
+          messages.push({
+            role: "tool",
+            tool_call_id: block.tool_use_id,
+            content: resultContent,
+          });
+        }
+      }
+
+      if (textParts.length > 0) {
+        messages.push({ role: "user", content: textParts.join("\n") });
+      }
+    }
   }
   return messages;
+}
+
+function toOpenAITools(tools: Tool[]): OpenAITool[] {
+  return tools.map((tool) => ({
+    type: "function" as const,
+    function: {
+      name: tool.name,
+      ...(tool.description && { description: tool.description }),
+      parameters: tool.input_schema,
+    },
+  }));
+}
+
+function toOpenAIToolChoice(
+  choice: ToolChoice,
+): OpenAIChatRequest["tool_choice"] {
+  if (choice.type === "auto") return "auto";
+  if (choice.type === "any") return "required";
+  return { type: "function", function: { name: choice.name } };
 }
 
 function isAgentCall(req: ProxyRequest): boolean {
@@ -92,6 +176,9 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
     ...(request.temperature !== undefined &&
       { temperature: request.temperature }),
     ...(request.top_p !== undefined && { top_p: request.top_p }),
+    ...(request.tools && request.tools.length > 0 &&
+      { tools: toOpenAITools(request.tools) }),
+    ...(request.tool_choice && { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
   const response = await fetch(COPILOT_CHAT_URL, {
@@ -124,11 +211,34 @@ export async function chat(request: ProxyRequest): Promise<ProxyResponse> {
   const data = await response.json() as OpenAIChatResponse;
   const choice = data.choices[0];
 
+  const contentBlocks: ContentBlock[] = [];
+
+  if (choice.message.content) {
+    contentBlocks.push({ type: "text", text: choice.message.content });
+  }
+
+  if (choice.message.tool_calls) {
+    for (const toolCall of choice.message.tool_calls) {
+      let input: Record<string, unknown>;
+      try {
+        input = JSON.parse(toolCall.function.arguments) as Record<string, unknown>;
+      } catch {
+        input = { _raw: toolCall.function.arguments };
+      }
+      contentBlocks.push({
+        type: "tool_use",
+        id: toolCall.id,
+        name: toolCall.function.name,
+        input,
+      });
+    }
+  }
+
   return {
     id: generateMessageId(),
     type: "message",
     role: "assistant",
-    content: [{ type: "text", text: choice.message.content }],
+    content: contentBlocks,
     model: request.model,
     stop_reason: finishReasonToStopReason(choice.finish_reason),
     stop_sequence: null,
@@ -158,6 +268,9 @@ export async function chatStream(
     ...(request.temperature !== undefined &&
       { temperature: request.temperature }),
     ...(request.top_p !== undefined && { top_p: request.top_p }),
+    ...(request.tools && request.tools.length > 0 &&
+      { tools: toOpenAITools(request.tools) }),
+    ...(request.tool_choice && { tool_choice: toOpenAIToolChoice(request.tool_choice) }),
   };
 
   const response = await fetch(COPILOT_CHAT_URL, {
@@ -209,10 +322,18 @@ export async function chatStream(
   const decoder = new TextDecoder();
   let buffer = "";
 
-  // State for managing event sequence
   let headerEmitted = false;
   let doneEmitted = false;
   const messageId = generateMessageId();
+
+  // Content block tracking
+  let nextBlockIndex = 0;
+  let textBlockIndex = -1;
+  // Maps OpenAI tool_call index → { anthropic block index, id, name }
+  const toolCallBlocks = new Map<
+    number,
+    { index: number; id: string; name: string }
+  >();
 
   const emitHeader = () => {
     if (headerEmitted) return;
@@ -227,17 +348,21 @@ export async function chatStream(
         usage: { input_tokens: 0, output_tokens: 0 },
       },
     });
-    onChunk({
-      type: "content_block_start",
-      index: 0,
-      content_block: { type: "text" },
-    });
   };
 
-  const emitDone = (stopReason: "end_turn" | "max_tokens" | null) => {
+  const emitDone = (stopReason: "end_turn" | "max_tokens" | "tool_use" | null) => {
     if (doneEmitted) return;
     doneEmitted = true;
-    onChunk({ type: "content_block_stop", index: 0 });
+
+    // Close all open content blocks in index order
+    const openIndices: number[] = [];
+    if (textBlockIndex >= 0) openIndices.push(textBlockIndex);
+    for (const info of toolCallBlocks.values()) openIndices.push(info.index);
+    openIndices.sort((a, b) => a - b);
+    for (const idx of openIndices) {
+      onChunk({ type: "content_block_stop", index: idx });
+    }
+
     onChunk({
       type: "message_delta",
       usage: { input_tokens: 0, output_tokens: 0 },
@@ -253,7 +378,6 @@ export async function chatStream(
 
       buffer += decoder.decode(value, { stream: true });
 
-      // Split on SSE line endings
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 
@@ -264,7 +388,7 @@ export async function chatStream(
         const data = trimmed.slice("data:".length).trim();
 
         if (data === "[DONE]") {
-          emitHeader(); // in case no content chunks were received
+          emitHeader();
           emitDone("end_turn");
           continue;
         }
@@ -281,18 +405,59 @@ export async function chatStream(
 
         const { delta, finish_reason } = choice;
 
-        // Only emit content delta if there's actual text
+        // Handle text content
         if (delta.content) {
           emitHeader();
+          if (textBlockIndex < 0) {
+            textBlockIndex = nextBlockIndex++;
+            onChunk({
+              type: "content_block_start",
+              index: textBlockIndex,
+              content_block: { type: "text" },
+            });
+          }
           onChunk({
             type: "content_block_delta",
-            index: 0,
+            index: textBlockIndex,
             delta: { type: "text_delta", text: delta.content },
           });
         }
 
+        // Handle tool call deltas
+        if (delta.tool_calls) {
+          emitHeader();
+          for (const tcDelta of delta.tool_calls) {
+            const tcIndex = tcDelta.index;
+
+            if (!toolCallBlocks.has(tcIndex)) {
+              // First chunk for this tool call — start the block
+              const blockIndex = nextBlockIndex++;
+              const id = tcDelta.id ?? `tool_${blockIndex}`;
+              const name = tcDelta.function?.name ?? "";
+              toolCallBlocks.set(tcIndex, { index: blockIndex, id, name });
+              onChunk({
+                type: "content_block_start",
+                index: blockIndex,
+                content_block: { type: "tool_use", id, name, input: {} },
+              });
+            }
+
+            if (tcDelta.function?.arguments) {
+              const blockInfo = toolCallBlocks.get(tcIndex)!;
+              onChunk({
+                type: "content_block_delta",
+                index: blockInfo.index,
+                delta: {
+                  type: "input_json_delta",
+                  partial_json: tcDelta.function.arguments,
+                },
+              });
+            }
+          }
+        }
+
         if (finish_reason) {
-          emitHeader(); // ensure header emitted before close
+          emitHeader();
           emitDone(finishReasonToStopReason(finish_reason));
         }
       }

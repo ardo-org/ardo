@@ -23,9 +23,33 @@ export interface CopilotToken {
   refreshIn: number;
 }
 
+export interface OpenAIToolFunction {
+  name: string;
+  description?: string;
+  parameters?: Record<string, unknown>;
+}
+
+export interface OpenAITool {
+  type: "function";
+  function: OpenAIToolFunction;
+}
+
+export interface OpenAIToolCallFunction {
+  name: string;
+  arguments: string;
+}
+
+export interface OpenAIToolCall {
+  id: string;
+  type: "function";
+  function: OpenAIToolCallFunction;
+}
+
 export interface OpenAIMessage {
-  role: "system" | "user" | "assistant";
-  content: string;
+  role: "system" | "user" | "assistant" | "tool";
+  content: string | null;
+  tool_calls?: OpenAIToolCall[];
+  tool_call_id?: string;
 }
 
 export interface OpenAIChatRequest {
@@ -35,6 +59,11 @@ export interface OpenAIChatRequest {
   stream?: boolean;
   temperature?: number;
   top_p?: number;
+  tools?: OpenAITool[];
+  tool_choice?: "auto" | "none" | "required" | {
+    type: "function";
+    function: { name: string };
+  };
 }
 
 export interface OpenAIUsage {
@@ -46,7 +75,7 @@ export interface OpenAIUsage {
 export interface OpenAIChoice {
   index: number;
   message: OpenAIMessage;
-  finish_reason: "stop" | "length" | null;
+  finish_reason: "stop" | "length" | "tool_calls" | null;
 }
 
 export interface OpenAIChatResponse {
@@ -56,15 +85,26 @@ export interface OpenAIChatResponse {
   usage: OpenAIUsage;
 }
 
+export interface OpenAIStreamToolCallDelta {
+  index: number;
+  id?: string;
+  type?: "function";
+  function?: {
+    name?: string;
+    arguments?: string;
+  };
+}
+
 export interface OpenAIStreamDelta {
   role?: "assistant";
   content?: string;
+  tool_calls?: OpenAIStreamToolCallDelta[];
 }
 
 export interface OpenAIStreamChoice {
   index: number;
   delta: OpenAIStreamDelta;
-  finish_reason: "stop" | "length" | null;
+  finish_reason: "stop" | "length" | "tool_calls" | null;
 }
 
 export interface OpenAIStreamChunk {
@@ -75,12 +115,13 @@ export interface OpenAIStreamChunk {
 
 /**
  * Maps OpenAI finish_reason to Anthropic stop_reason.
- * "stop" → "end_turn", "length" → "max_tokens", null → null
+ * "stop" → "end_turn", "length" → "max_tokens", "tool_calls" → "tool_use", null → null
  */
 export function finishReasonToStopReason(
   r: string | null,
-): "end_turn" | "max_tokens" | null {
+): "end_turn" | "max_tokens" | "tool_use" | null {
   if (r === "stop") return "end_turn";
   if (r === "length") return "max_tokens";
+  if (r === "tool_calls") return "tool_use";
   return null;
 }
