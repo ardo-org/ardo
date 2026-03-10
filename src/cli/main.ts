@@ -33,7 +33,6 @@ Commands:
 Options:
   --help, -h          Show this help message
   --version, -v       Show version
-  --daemon            (internal) Run as background daemon
 `.trim());
 }
 
