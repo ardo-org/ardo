@@ -72,7 +72,7 @@ A developer reads the README and can follow a 2-step quickstart: install the too
 ### Functional Requirements
 
 - **FR-001**: A single command from the repository root MUST install `coco` as a globally available CLI tool using Deno's native install mechanism
-- **FR-002**: A single command from the repository root MUST install `coco` as a globally available CLI tool via mise for developers who use mise for tool version management — implemented as a `mise.toml` `install` task that wraps `deno install`, invoked with `mise run install`
+- **FR-002**: A single command from the repository root MUST install `coco` as a globally available CLI tool via mise for developers who use mise for tool version management — implemented as a `.mise.toml` `install` task that wraps `deno install`, invoked with `mise run install`
 - **FR-003**: The installed binary MUST be named `coco`
 - **FR-004**: Running the install command when `coco` is already installed MUST update the existing installation without error
 - **FR-005**: `coco install-service` MUST register the Coco daemon with the native OS login service manager (LaunchAgent on macOS, systemd user unit on Linux)
@@ -89,7 +89,7 @@ A developer reads the README and can follow a 2-step quickstart: install the too
 
 - **Global Install**: The `coco` binary registered in the developer's PATH, sourced from the local repository's entry point
 - **Service Registration**: An OS-level configuration file (plist on macOS / systemd unit on Linux) that instructs the OS to launch the Coco daemon at user login
-- **mise configuration**: A `mise.toml` file in the repository root containing an `install` task that wraps `deno install`, allowing `mise run install` to globally install `coco`
+- **mise configuration**: A `.mise.toml` file in the repository root containing an `install` task that wraps `deno install`, allowing `mise run install` to globally install `coco`
 
 ## Success Criteria *(mandatory)*
 
