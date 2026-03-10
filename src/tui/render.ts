@@ -1,10 +1,10 @@
 /**
  * TUI renderer for Coco.
  *
- * Renders the full-screen TUI and supports efficient dirty-row updates.
- * Uses raw ANSI/VT100 sequences — no external dependencies.
+ * Uses @cliffy/ansi for ANSI escape sequences and cursor control.
+ * Performs a full redraw on every state change to avoid cursor arithmetic bugs.
  *
- * Layout (per contracts/cli-interface.md):
+ * Layout:
  *
  *   Coco — Local AI Gateway
  *   ──────────────────────────────────────────────
@@ -21,43 +21,16 @@
  *   Space: toggle   Enter: apply   q: quit
  */
 
+import { colors } from "@cliffy/ansi/colors";
+import { tty } from "@cliffy/ansi/tty";
 import type { DetectionResult } from "../agents/detector.ts";
 import type { ServiceState } from "../service/status.ts";
 
 // ---------------------------------------------------------------------------
-// ANSI helpers
+// Constants
 // ---------------------------------------------------------------------------
 
-const ESC = "\x1b";
 const DIVIDER = "──────────────────────────────────────────────";
-
-function bold(s: string): string {
-  return `${ESC}[1m${s}${ESC}[0m`;
-}
-
-function dim(s: string): string {
-  return `${ESC}[2m${s}${ESC}[0m`;
-}
-
-function yellow(s: string): string {
-  return `${ESC}[33m${s}${ESC}[0m`;
-}
-
-function cursorUp(n: number): string {
-  return `${ESC}[${n}A`;
-}
-
-function clearLine(): string {
-  return `${ESC}[2K\r`;
-}
-
-function hideCursor(): string {
-  return `${ESC}[?25l`;
-}
-
-function showCursor(): string {
-  return `${ESC}[?25h`;
-}
 
 // ---------------------------------------------------------------------------
 // State types
@@ -125,10 +98,7 @@ export function buildTUIState(
  * Render a single agent row.
  * `isCursor` — true when this is the focused row.
  */
-export function renderRow(
-  row: AgentRow,
-  isCursor: boolean,
-): string {
+export function renderRow(row: AgentRow, isCursor: boolean): string {
   const checkmark = row.selected ? "x" : " ";
   const prefix = row.configStatus === "misconfigured" ? "-" : checkmark;
   const bracket = `[${prefix}]`;
@@ -137,53 +107,20 @@ export function renderRow(
   const stateCol = row.state.padEnd(14);
 
   let suffix = "";
-  if (row.configStatus === "misconfigured") {
-    suffix = " (misconfigured)";
-  }
+  if (row.configStatus === "misconfigured") suffix = " (misconfigured)";
 
-  let line = `${bracket} ${nameCol} ${stateCol}${suffix}`;
+  const line = `${bracket} ${nameCol} ${stateCol}${suffix}`;
 
   if (row.state === "not-installed") {
-    line = dim(line);
-  } else if (row.configStatus === "misconfigured") {
-    line = yellow(line);
-  } else if (isCursor) {
-    line = bold(line);
+    return colors.dim(line);
   }
-
+  if (row.configStatus === "misconfigured") {
+    return colors.yellow(line);
+  }
+  if (isCursor) {
+    return colors.bold(line);
+  }
   return line;
-}
-
-// ---------------------------------------------------------------------------
-// Header / footer
-// ---------------------------------------------------------------------------
-
-function renderHeader(state: TUIState): string[] {
-  const { serviceState } = state;
-  const statusLine = serviceState.running
-    ? `Status:  Running on http://localhost:${serviceState.port}`
-    : "Status:  Not running";
-  const authLine = serviceState.authStatus === "authenticated"
-    ? "Copilot: Authenticated ✓"
-    : "Copilot: Not authenticated";
-
-  return [
-    bold("Coco — Local AI Gateway"),
-    DIVIDER,
-    statusLine,
-    authLine,
-    "",
-    "Agents",
-    DIVIDER,
-  ];
-}
-
-function renderFooter(): string[] {
-  return [
-    "",
-    DIVIDER,
-    "Space: toggle   Enter: apply   q: quit",
-  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -191,62 +128,42 @@ function renderFooter(): string[] {
 // ---------------------------------------------------------------------------
 
 /**
- * Render the entire TUI to stdout.
- * Hides the cursor during the render to prevent flicker.
+ * Clear screen and render the entire TUI to stdout.
  */
 export function renderFull(state: TUIState): void {
+  const { serviceState } = state;
+
+  const statusLine = serviceState.running
+    ? `Status:  Running on http://localhost:${serviceState.port}`
+    : "Status:  Not running";
+  const authLine = serviceState.authStatus === "authenticated"
+    ? "Copilot: Authenticated ✓"
+    : "Copilot: Not authenticated";
+
+  tty.cursorHide.eraseScreen.cursorTo(0, 0)();
+
   const lines: string[] = [
-    hideCursor(),
-    ...renderHeader(state),
+    colors.bold("Coco — Local AI Gateway"),
+    DIVIDER,
+    statusLine,
+    authLine,
+    "",
+    "Agents",
+    DIVIDER,
     ...state.agents.map((row, i) => renderRow(row, i === state.cursorIndex)),
-    ...renderFooter(),
-    showCursor(),
+    "",
+    DIVIDER,
+    "Space: toggle   Enter: apply   q: quit",
   ];
-  Deno.stdout.writeSync(new TextEncoder().encode(lines.join("\n") + "\n"));
+
+  console.log(lines.join("\n"));
+  tty.cursorShow();
 }
 
 // ---------------------------------------------------------------------------
-// Dirty-row update
-// ---------------------------------------------------------------------------
-
-/** Number of header lines (static, computed from renderHeader). */
-const HEADER_LINE_COUNT = 7; // bold title + divider + status + auth + blank + Agents + divider
-
-/**
- * Redraw only the rows at the given indices, using cursor-up arithmetic.
- * `totalRows` is the total number of agent rows.
- */
-export function renderDirty(
-  state: TUIState,
-  dirtyRowIndices: number[],
-  totalRows: number,
-): void {
-  if (dirtyRowIndices.length === 0) return;
-
-  // Total lines rendered = header + agent rows + footer
-  const totalLines = HEADER_LINE_COUNT + totalRows + 3; // 3 footer lines
-  const enc = new TextEncoder();
-
-  let out = hideCursor();
-
-  for (const idx of dirtyRowIndices) {
-    // Lines from the bottom to this row
-    const lineFromBottom = totalLines - (HEADER_LINE_COUNT + idx) - 1;
-    out += cursorUp(lineFromBottom);
-    out += clearLine();
-    out += renderRow(state.agents[idx], idx === state.cursorIndex);
-    // Move back down
-    out += `${ESC}[${lineFromBottom}B`;
-  }
-
-  out += showCursor();
-  Deno.stdout.writeSync(enc.encode(out));
-}
-
-// ---------------------------------------------------------------------------
-// Clear screen helper
+// Clear screen helper (used before showing apply output)
 // ---------------------------------------------------------------------------
 
 export function clearScreen(): void {
-  Deno.stdout.writeSync(new TextEncoder().encode(`${ESC}[2J${ESC}[H`));
+  tty.eraseScreen.cursorTo(0, 0)();
 }

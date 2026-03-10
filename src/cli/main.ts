@@ -9,13 +9,8 @@ import {
   isAgentConfigured,
   unconfigureAgent,
 } from "../agents/config.ts";
-import {
-  buildTUIState,
-  clearScreen,
-  renderDirty,
-  renderFull,
-} from "../tui/render.ts";
-import { disableRawMode, enableRawMode, readKey } from "../tui/input.ts";
+import { buildTUIState, clearScreen, renderFull } from "../tui/render.ts";
+import { keypress, mapKey } from "../tui/input.ts";
 import { fetchModelList } from "../copilot/models.ts";
 
 function showHelp() {
@@ -231,7 +226,6 @@ async function runTUI(): Promise<void> {
   ]);
 
   const configuredNames = new Set(config.agents.map((a) => a.agentName));
-  // validatedAt === null means misconfigured
   const misconfiguredNames = new Set(
     config.agents.filter((a) => a.validatedAt === null).map((a) => a.agentName),
   );
@@ -243,112 +237,80 @@ async function runTUI(): Promise<void> {
     misconfiguredNames,
   );
 
-  clearScreen();
   renderFull(state);
 
-  let savedTerm = "";
-  try {
-    savedTerm = await enableRawMode();
-  } catch {
-    // stty not available (e.g. CI) — fall back to status output
-    const st = await getServiceState();
-    console.log(formatStatus(st));
-    Deno.exit(0);
-    return;
-  }
+  for await (const event of keypress()) {
+    const key = mapKey(event);
 
-  const restore = async () => {
-    try {
-      await disableRawMode(savedTerm);
-    } catch {
-      // best-effort
+    if (key === "CtrlC" || key === "Quit") {
+      break;
     }
-  };
 
-  try {
-    while (true) {
-      const key = await readKey();
-
-      if (key === "CtrlC" || key === "Quit") {
-        // Exit without applying changes
-        break;
+    if (key === "Up") {
+      if (state.cursorIndex > 0) {
+        state = { ...state, cursorIndex: state.cursorIndex - 1 };
+        renderFull(state);
       }
+      continue;
+    }
 
-      if (key === "Up") {
-        if (state.cursorIndex > 0) {
-          const prev = state.cursorIndex;
-          state = { ...state, cursorIndex: state.cursorIndex - 1 };
-          renderDirty(state, [prev, state.cursorIndex], state.agents.length);
-        }
-        continue;
+    if (key === "Down") {
+      if (state.cursorIndex < state.agents.length - 1) {
+        state = { ...state, cursorIndex: state.cursorIndex + 1 };
+        renderFull(state);
       }
+      continue;
+    }
 
-      if (key === "Down") {
-        if (state.cursorIndex < state.agents.length - 1) {
-          const prev = state.cursorIndex;
-          state = { ...state, cursorIndex: state.cursorIndex + 1 };
-          renderDirty(state, [prev, state.cursorIndex], state.agents.length);
-        }
-        continue;
+    if (key === "Space") {
+      const row = state.agents[state.cursorIndex];
+      if (row.state !== "not-installed") {
+        const agents = state.agents.map((a, i) =>
+          i === state.cursorIndex ? { ...a, selected: !a.selected } : a
+        );
+        state = { ...state, agents };
+        renderFull(state);
       }
+      continue;
+    }
 
-      if (key === "Space") {
-        const row = state.agents[state.cursorIndex];
-        // Only selectable if installed or detected
-        if (row.state !== "not-installed") {
-          const agents = state.agents.map((a, i) =>
-            i === state.cursorIndex ? { ...a, selected: !a.selected } : a
-          );
-          state = { ...state, agents };
-          renderDirty(state, [state.cursorIndex], state.agents.length);
-        }
-        continue;
-      }
+    if (key === "Enter") {
+      clearScreen();
 
-      if (key === "Enter") {
-        // Apply changes: configure/unconfigure based on selected state
-        await restore();
-        clearScreen();
+      let applyError = false;
+      const freshConfig = await loadConfig();
+      for (const row of state.agents) {
+        const wasConfigured = freshConfig.agents.some(
+          (a) => a.agentName === row.name,
+        );
+        const wantsConfigured = row.selected;
 
-        let applyError = false;
-        const freshConfig = await loadConfig();
-        for (const row of state.agents) {
-          const wasConfigured = freshConfig.agents.some(
-            (a) => a.agentName === row.name,
-          );
-          const wantsConfigured = row.selected;
-
-          if (wantsConfigured && !wasConfigured) {
-            try {
-              const updated = await loadConfig();
-              await configureAgent(row.name, updated.port, updated);
-              console.log(`${row.name} configured.`);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              console.error(`Error configuring ${row.name}: ${msg}`);
-              applyError = true;
-            }
-          } else if (!wantsConfigured && wasConfigured) {
-            try {
-              const updated = await loadConfig();
-              await unconfigureAgent(row.name, updated);
-              console.log(`${row.name} unconfigured.`);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              console.error(`Error unconfiguring ${row.name}: ${msg}`);
-              applyError = true;
-            }
+        if (wantsConfigured && !wasConfigured) {
+          try {
+            const updated = await loadConfig();
+            await configureAgent(row.name, updated.port, updated);
+            console.log(`${row.name} configured.`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`Error configuring ${row.name}: ${msg}`);
+            applyError = true;
+          }
+        } else if (!wantsConfigured && wasConfigured) {
+          try {
+            const updated = await loadConfig();
+            await unconfigureAgent(row.name, updated);
+            console.log(`${row.name} unconfigured.`);
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`Error unconfiguring ${row.name}: ${msg}`);
+            applyError = true;
           }
         }
-
-        Deno.exit(applyError ? 1 : 0);
-        return;
       }
+
+      Deno.exit(applyError ? 1 : 0);
+      return;
     }
-  } finally {
-    await restore();
-    // Show cursor and move to new line after TUI exits
-    Deno.stdout.writeSync(new TextEncoder().encode("\x1b[?25h\n"));
   }
 }
 
