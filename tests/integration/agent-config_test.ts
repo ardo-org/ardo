@@ -57,8 +57,11 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
 
     const content = await Deno.readTextFile(entry.configPath);
     assertStringIncludes(content, "model_provider");
+    assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
     assertStringIncludes(content, "coco");
+    assertEquals(content.includes("auth_method"), false);
+    assertEquals(content.includes("api_key"), false);
   });
 });
 

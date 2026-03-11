@@ -157,8 +157,8 @@ async function writeCline(
 
   // API key is stored in a separate secrets file (plain JSON in CLI version).
   const existingSecrets: Record<string, unknown> = (await fileExists(
-    secretsPath,
-  ))
+      secretsPath,
+    ))
     ? JSON.parse(await Deno.readTextFile(secretsPath)) as Record<
       string,
       unknown
@@ -198,8 +198,6 @@ async function writeCodex(
       coco: {
         name: "Coco",
         base_url: `http://127.0.0.1:${port}/v1/`,
-        auth_method: "api_key",
-        api_key: "coco",
       },
     },
   };
