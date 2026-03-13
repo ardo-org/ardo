@@ -1,6 +1,7 @@
 import { join } from "@std/path";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
+export type ModelMappingPolicy = "compatible" | "strict";
 
 export interface ConfigEntry {
   agentName: string;
@@ -23,6 +24,8 @@ export interface CocoConfig {
   modelMap: Record<string, string>;
   /** Per-agent configuration records. */
   agents: ConfigEntry[];
+  /** Model resolution policy. "compatible" allows fallback remaps; "strict" requires exact model match. */
+  modelMappingPolicy: ModelMappingPolicy;
   /** ISO timestamp of last successful daemon start. */
   lastStarted: string | null;
 }
@@ -32,6 +35,7 @@ export const DEFAULT_CONFIG: CocoConfig = {
   logLevel: "info",
   modelMap: {},
   agents: [],
+  modelMappingPolicy: "compatible",
   lastStarted: null,
 };
 
@@ -56,6 +60,10 @@ function validate(config: CocoConfig): void {
     if (!k.trim() || !v.trim()) {
       throw new Error(`modelMap entry has empty key or value: "${k}" → "${v}"`);
     }
+  }
+  const validPolicies: ModelMappingPolicy[] = ["compatible", "strict"];
+  if (!validPolicies.includes(config.modelMappingPolicy)) {
+    throw new Error(`Invalid modelMappingPolicy: ${config.modelMappingPolicy}`);
   }
   for (const entry of config.agents) {
     if (

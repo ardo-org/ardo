@@ -300,3 +300,26 @@ export interface OpenAIModelList {
   object: "list";
   data: OpenAIModel[];
 }
+
+// ---------------------------------------------------------------------------
+// OpenAI Responses-compatible types (minimal subset for Codex compatibility)
+// ---------------------------------------------------------------------------
+
+export interface OpenAIResponsesInputTextPart {
+  type: "input_text" | "text";
+  text: string;
+}
+
+export interface OpenAIResponsesInputMessage {
+  role: "user" | "assistant" | "system";
+  content: string | OpenAIResponsesInputTextPart[];
+}
+
+export interface OpenAIResponsesRequest {
+  model: string;
+  input?: string | OpenAIResponsesInputMessage[];
+  max_output_tokens?: number;
+  temperature?: number;
+  top_p?: number;
+  stream?: boolean;
+}

@@ -131,6 +131,7 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor, 
 | `coco unconfigure <agent>` | Revert config for a specific agent |
 | `coco doctor` | Scan and report all agents' states |
 | `coco models` | List available Copilot model IDs |
+| `coco model-policy [compatible|strict]` | Show or set model mapping policy |
 | `coco install-service` | Register daemon with OS login service manager |
 | `coco uninstall-service` | Remove daemon from OS login service manager |
 | `coco --help` | Show help |

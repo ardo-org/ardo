@@ -6,12 +6,16 @@ interface RunResult {
   exitCode: number;
 }
 
-async function runCoco(args: string[]): Promise<RunResult> {
+async function runCoco(
+  args: string[],
+  env?: Record<string, string>,
+): Promise<RunResult> {
   const command = new Deno.Command("deno", {
     args: ["run", "-A", "src/cli/main.ts", ...args],
     stdout: "piped",
     stderr: "piped",
     stdin: "null",
+    env,
   });
 
   const output = await command.output();
@@ -48,4 +52,56 @@ Deno.test("CLI contract: -h alias prints usage and exits 0", async () => {
   assertStringIncludes(result.stdout, "Coco");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
+});
+
+Deno.test("CLI contract: --help includes model-policy command", async () => {
+  const result = await runCoco(["--help"]);
+  assertStringIncludes(result.stdout, "model-policy");
+  assertEquals(result.exitCode, 0);
+});
+
+Deno.test("CLI contract: model-policy prints current default", async () => {
+  const tempHome = await Deno.makeTempDir({
+    prefix: "coco_cli_policy_default_",
+  });
+  try {
+    const result = await runCoco(["model-policy"], { HOME: tempHome });
+    assertStringIncludes(result.stdout, "Model mapping policy: compatible");
+    assertEquals(result.exitCode, 0);
+  } finally {
+    await Deno.remove(tempHome, { recursive: true });
+  }
+});
+
+Deno.test("CLI contract: model-policy strict persists setting", async () => {
+  const tempHome = await Deno.makeTempDir({ prefix: "coco_cli_policy_set_" });
+  try {
+    const setResult = await runCoco(["model-policy", "strict"], {
+      HOME: tempHome,
+    });
+    assertStringIncludes(
+      setResult.stdout,
+      "Model mapping policy set to: strict",
+    );
+    assertEquals(setResult.exitCode, 0);
+
+    const getResult = await runCoco(["model-policy"], { HOME: tempHome });
+    assertStringIncludes(getResult.stdout, "Model mapping policy: strict");
+    assertEquals(getResult.exitCode, 0);
+  } finally {
+    await Deno.remove(tempHome, { recursive: true });
+  }
+});
+
+Deno.test("CLI contract: model-policy rejects invalid value", async () => {
+  const tempHome = await Deno.makeTempDir({
+    prefix: "coco_cli_policy_invalid_",
+  });
+  try {
+    const result = await runCoco(["model-policy", "auto"], { HOME: tempHome });
+    assertStringIncludes(result.stderr, "Invalid model policy");
+    assertEquals(result.exitCode, 1);
+  } finally {
+    await Deno.remove(tempHome, { recursive: true });
+  }
 });

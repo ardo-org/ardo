@@ -146,6 +146,79 @@ Deno.test("OpenAI /v1/chat/completions — streaming returns text/event-stream",
 });
 
 // ---------------------------------------------------------------------------
+// /v1/responses — validation + response shape
+// ---------------------------------------------------------------------------
+
+Deno.test("OpenAI /v1/responses — missing model returns 400", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      input: "ping",
+    });
+    assertEquals(res.status, 400);
+    const body = await res.json() as Record<string, unknown>;
+    assertEquals(
+      (body.error as Record<string, unknown>).type,
+      "invalid_request_error",
+    );
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/responses — non-streaming returns object:response", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      model: "gpt-4o",
+      input: "ping",
+      stream: false,
+    });
+
+    // May be 200 (Copilot available) or 503 (no Copilot token in test env)
+    if (res.status === 200) {
+      const body = await res.json() as Record<string, unknown>;
+      assertEquals(body.object, "response");
+      assertEquals(typeof body.id, "string");
+      assertEquals(body.status, "completed");
+      assertEquals(typeof body.output_text, "string");
+    } else {
+      await res.body?.cancel();
+    }
+  } finally {
+    await s.shutdown();
+  }
+});
+
+Deno.test("OpenAI /v1/responses — streaming includes response.completed", async () => {
+  const s = server();
+  const { port } = s.addr as Deno.NetAddr;
+  try {
+    const res = await post(port, "/v1/responses", {
+      model: "gpt-4o",
+      input: "ping",
+      stream: true,
+    });
+
+    if (res.status === 200) {
+      assertEquals(res.headers.get("content-type"), "text/event-stream");
+      const text = await res.text();
+      assertStringIncludes(text, "event: response.created");
+      assertStringIncludes(text, "event: response.output_item.added");
+      assertStringIncludes(text, "event: response.content_part.added");
+      assertStringIncludes(text, "event: response.completed");
+      assertStringIncludes(text, "data: [DONE]");
+    } else {
+      await res.body?.cancel();
+    }
+  } finally {
+    await s.shutdown();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // GET /v1/models
 // ---------------------------------------------------------------------------
 

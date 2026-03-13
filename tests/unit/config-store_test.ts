@@ -31,6 +31,7 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
     assertEquals(config.logLevel, DEFAULT_CONFIG.logLevel);
     assertEquals(config.agents, []);
     assertEquals(config.modelMap, {});
+    assertEquals(config.modelMappingPolicy, "compatible");
     assertEquals(config.lastStarted, null);
   });
 });
@@ -50,6 +51,7 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
       logLevel: "debug",
       modelMap: { "claude-3": "claude-3-sonnet" },
       agents: [],
+      modelMappingPolicy: "strict",
       lastStarted: "2026-01-01T00:00:00.000Z",
     };
     await saveConfig(config);
@@ -57,7 +59,20 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.port, 12345);
     assertEquals(loaded.logLevel, "debug");
     assertEquals(loaded.modelMap, { "claude-3": "claude-3-sonnet" });
+    assertEquals(loaded.modelMappingPolicy, "strict");
     assertEquals(loaded.lastStarted, "2026-01-01T00:00:00.000Z");
+  });
+});
+
+Deno.test("saveConfig — rejects invalid modelMappingPolicy", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      // deno-lint-ignore no-explicit-any
+      () =>
+        saveConfig({ ...DEFAULT_CONFIG, modelMappingPolicy: "auto" as any }),
+      Error,
+      "Invalid modelMappingPolicy",
+    );
   });
 });
 

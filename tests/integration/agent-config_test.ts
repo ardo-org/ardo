@@ -60,6 +60,8 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
     assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
     assertStringIncludes(content, "coco");
+    assertStringIncludes(content, 'wire_api = "responses"');
+    assertStringIncludes(content, 'model = "gpt-5.4"');
     assertEquals(content.includes("auth_method"), false);
     assertEquals(content.includes("api_key"), false);
   });

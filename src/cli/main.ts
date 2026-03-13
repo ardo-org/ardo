@@ -9,7 +9,7 @@ import {
   UnsupportedPlatformError,
 } from "../service/autostart.ts";
 import { detectAll } from "../agents/detector.ts";
-import { loadConfig } from "../config/store.ts";
+import { loadConfig, saveConfig } from "../config/store.ts";
 import {
   configureAgent,
   isAgentConfigured,
@@ -41,6 +41,7 @@ Commands:
   unconfigure <agent> Revert agent configuration
   doctor              Scan and report all agent states
   models              List available Copilot model IDs
+  model-policy [mode] Show or set model mapping policy (compatible|strict)
   install-service     Register daemon with OS login service manager
   uninstall-service   Remove daemon from OS login service manager
 
@@ -302,6 +303,30 @@ async function cmdModels(): Promise<void> {
   console.log("\nRun 'coco configure <agent>' to route an agent through Coco.");
 }
 
+async function cmdModelPolicy(policyArg: string | undefined): Promise<void> {
+  const config = await loadConfig();
+
+  if (!policyArg) {
+    console.log(`Model mapping policy: ${config.modelMappingPolicy}`);
+    return;
+  }
+
+  if (policyArg !== "compatible" && policyArg !== "strict") {
+    console.error(
+      `Error: Invalid model policy "${policyArg}". Use "compatible" or "strict".`,
+    );
+    Deno.exit(1);
+  }
+
+  if (config.modelMappingPolicy === policyArg) {
+    console.log(`Model mapping policy already set to: ${policyArg}`);
+    return;
+  }
+
+  await saveConfig({ ...config, modelMappingPolicy: policyArg });
+  console.log(`Model mapping policy set to: ${policyArg}`);
+}
+
 async function runTUI(): Promise<void> {
   const [serviceState, config, detectionResults] = await Promise.all([
     getServiceState(),
@@ -464,6 +489,9 @@ async function main() {
       break;
     case "models":
       await cmdModels();
+      break;
+    case "model-policy":
+      await cmdModelPolicy(args[1]);
       break;
     case "install-service":
       await cmdInstallService();

@@ -191,13 +191,16 @@ async function writeCodex(
     (existing.model_providers as Record<string, unknown>) ?? {};
   const updated = {
     ...existing,
-    model: "codex-mini-latest",
+    // Use a Codex-native model to avoid local metadata fallback warnings.
+    model: "gpt-5.4",
     model_provider: "coco",
     model_providers: {
       ...existingProviders,
       coco: {
         name: "Coco",
         base_url: `http://127.0.0.1:${port}/v1/`,
+        // Codex now requires Responses API wiring.
+        wire_api: "responses",
       },
     },
   };
@@ -266,6 +269,27 @@ export async function validateConfig(port: number): Promise<boolean> {
 export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
   try {
     const content = await Deno.readTextFile(entry.configPath);
+
+    // Codex requires explicit responses wiring; older configs may still
+    // point to /v1/responses and should be treated as stale.
+    if (entry.agentName === "codex") {
+      const parsed = parseToml(content) as Record<string, unknown>;
+      if (parsed.model_provider !== "coco") return false;
+
+      const providers = parsed.model_providers as Record<string, unknown>;
+      if (!providers || typeof providers !== "object") return false;
+
+      const coco = providers.coco as Record<string, unknown>;
+      if (!coco || typeof coco !== "object") return false;
+
+      const baseUrl = coco.base_url;
+      const wireApi = coco.wire_api;
+      if (typeof baseUrl !== "string" || !baseUrl.includes(entry.endpoint)) {
+        return false;
+      }
+      return wireApi === "responses";
+    }
+
     return content.includes(entry.endpoint);
   } catch {
     return false;
