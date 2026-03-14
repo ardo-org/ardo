@@ -1,6 +1,6 @@
 # Tasks: Documentation Improvement Initiative
 
-**Input**: Design documents from `/specs/001-improve-docs/`
+**Input**: Design documents from `/specs/010-improve-docs/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
 **Tests**: Not explicitly requested in specification - focusing on implementation and validation tasks

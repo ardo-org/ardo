@@ -657,7 +657,7 @@ deno run --allow-read scripts/docs/validate.ts README.md AGENTS.md constitution.
 # Commit changes and push to trigger workflow
 git add .
 git commit -m "feat: implement documentation validation and improvements"
-git push origin 001-improve-docs
+git push origin 010-improve-docs
 
 # Monitor GitHub Actions workflow
 # Verify validation passes

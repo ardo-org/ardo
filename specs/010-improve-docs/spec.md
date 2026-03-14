@@ -1,6 +1,6 @@
 # Feature Specification: Documentation Improvement Initiative
 
-**Feature Branch**: `001-improve-docs`
+**Feature Branch**: `010-improve-docs`
 **Created**: 2026-03-08
 **Status**: Draft
 **Input**: User description: "I would like to improve the AGENTS, README, and constitution"

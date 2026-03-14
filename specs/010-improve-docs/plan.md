@@ -1,7 +1,7 @@
 # Implementation Plan: Documentation Improvement Initiative
 
-**Branch**: `001-improve-docs` | **Date**: 2026-03-08 | **Spec**: [spec.md](./spec.md)
-**Input**: Feature specification from `/specs/001-improve-docs/spec.md`
+**Branch**: `010-improve-docs` | **Date**: 2026-03-08 | **Spec**: [spec.md](./spec.md)
+**Input**: Feature specification from `/specs/010-improve-docs/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/plan-template.md` for the execution workflow.
 
@@ -47,7 +47,7 @@ Improve the AGENTS, README, and constitution documentation to enhance developer 
 ### Documentation (this feature)
 
 ```text
-specs/001-improve-docs/
+specs/010-improve-docs/
 ├── plan.md              # This file (/speckit.plan command output)
 ├── research.md          # Phase 0 output (/speckit.plan command)
 ├── data-model.md        # Phase 1 output (/speckit.plan command)
