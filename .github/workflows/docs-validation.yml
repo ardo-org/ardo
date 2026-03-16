@@ -12,10 +12,10 @@ jobs:
   docs-validation:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: v1.x
 
@@ -25,7 +25,7 @@ jobs:
           echo "Running documentation validation..."
 
           # Run validation and capture output
-          if deno run --allow-read scripts/docs/validate.ts --format json README.md AGENTS.md CONVENTIONS.md > validation-result.json 2>&1; then
+          if deno run --allow-read scripts/docs/validate.ts --format json README.md AGENTS.md CONVENTIONS.md > validation-result.json 2> validation-stderr.log; then
             echo "Validation completed successfully"
           else
             echo "Validation found issues"
@@ -33,18 +33,23 @@ jobs:
 
           # Extract metrics
           if [ -f validation-result.json ]; then
-            score=$(cat validation-result.json | grep -o '"consistencyScore":[0-9.]*' | cut -d: -f2)
-            echo "score=${score:-0}" >> $GITHUB_OUTPUT
+            if jq -e '.summary' validation-result.json >/dev/null 2>&1; then
+              score=$(jq -r '.summary.consistencyScore // 0' validation-result.json)
+              errors=$(jq -r '.summary.errorCount // 0' validation-result.json)
+              warnings=$(jq -r '.summary.warningCount // 0' validation-result.json)
 
-            errors=$(cat validation-result.json | grep -o '"errorCount":[0-9]*' | cut -d: -f2)
-            echo "errors=${errors:-0}" >> $GITHUB_OUTPUT
-
-            warnings=$(cat validation-result.json | grep -o '"warningCount":[0-9]*' | cut -d: -f2)
-            echo "warnings=${warnings:-0}" >> $GITHUB_OUTPUT
+              echo "score=${score}" >> "$GITHUB_OUTPUT"
+              echo "errors=${errors}" >> "$GITHUB_OUTPUT"
+              echo "warnings=${warnings}" >> "$GITHUB_OUTPUT"
+            else
+              echo "score=0" >> "$GITHUB_OUTPUT"
+              echo "errors=1" >> "$GITHUB_OUTPUT"
+              echo "warnings=0" >> "$GITHUB_OUTPUT"
+            fi
           else
-            echo "score=0" >> $GITHUB_OUTPUT
-            echo "errors=1" >> $GITHUB_OUTPUT
-            echo "warnings=0" >> $GITHUB_OUTPUT
+            echo "score=0" >> "$GITHUB_OUTPUT"
+            echo "errors=1" >> "$GITHUB_OUTPUT"
+            echo "warnings=0" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Check Consistency Score
@@ -81,16 +86,24 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
 
+          if [ -s validation-stderr.log ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Validator stderr" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`text" >> $GITHUB_STEP_SUMMARY
+            cat validation-stderr.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
   progressive-disclosure:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Deno
-        uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@v2
         with:
           deno-version: v1.x
 
