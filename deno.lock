@@ -5,12 +5,27 @@
     "jsr:@cliffy/internal@1.0.0": "1.0.0",
     "jsr:@cliffy/keycode@1.0.0": "1.0.0",
     "jsr:@cliffy/keypress@1": "1.0.0",
+    "jsr:@cross/deepmerge@1": "1.0.0",
+    "jsr:@cross/dir@^1.1.0": "1.1.0",
+    "jsr:@cross/env@1": "1.0.3",
+    "jsr:@cross/env@^1.0.2": "1.0.3",
+    "jsr:@cross/fs@^0.0.8": "0.0.8",
+    "jsr:@cross/fs@^0.0.9": "0.0.9",
+    "jsr:@cross/runtime@1": "1.2.1",
+    "jsr:@cross/service@*": "1.0.7",
+    "jsr:@cross/service@^1.0.7": "1.0.7",
+    "jsr:@cross/utils@0.10": "0.10.0",
+    "jsr:@cross/utils@0.11": "0.11.0",
+    "jsr:@cross/utils@0.7": "0.7.1",
+    "jsr:@cross/utils@0.9": "0.9.4",
+    "jsr:@std/assert@0.221": "0.221.0",
     "jsr:@std/assert@1.0.19": "1.0.19",
     "jsr:@std/collections@^1.1.3": "1.1.6",
     "jsr:@std/encoding@^1.0.10": "1.0.10",
     "jsr:@std/fmt@^1.0.9": "1.0.9",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/io@~0.225.3": "0.225.3",
+    "jsr:@std/path@0.221": "0.221.0",
     "jsr:@std/path@^1.1.4": "1.1.4",
     "jsr:@std/toml@^1.0.11": "1.0.11",
     "jsr:@std/yaml@^1.0.12": "1.0.12",
@@ -39,6 +54,84 @@
         "jsr:@cliffy/keycode"
       ]
     },
+    "@cross/deepmerge@1.0.0": {
+      "integrity": "1e1318a74e31ba1959b9aa0acae8bd417b806f74ffd25ac07c90e12f83ad6b1d"
+    },
+    "@cross/dir@1.1.0": {
+      "integrity": "41eb779daf160f53bc33ef91f593f332fffc52ec9b81f87178db564718534e59",
+      "dependencies": [
+        "jsr:@cross/env@1",
+        "jsr:@cross/runtime",
+        "jsr:@cross/utils@0.7"
+      ]
+    },
+    "@cross/env@1.0.3": {
+      "integrity": "218d2dd68bec55cf047d1670a8bddc304b9c011a8ad22e647afa916bb796c8b4",
+      "dependencies": [
+        "jsr:@cross/deepmerge",
+        "jsr:@cross/runtime"
+      ]
+    },
+    "@cross/fs@0.0.8": {
+      "integrity": "1306ba58c498d756e2e012b9a60828ae45631d3999174444c3c189afc2a706a5",
+      "dependencies": [
+        "jsr:@cross/env@1",
+        "jsr:@cross/runtime",
+        "jsr:@cross/utils@0.9",
+        "jsr:@std/path@0.221"
+      ]
+    },
+    "@cross/fs@0.0.9": {
+      "integrity": "29d1c0999877c2a92d507e21d4eafb971d23c2e5d7d5393cc2db0eeeffeff3f6",
+      "dependencies": [
+        "jsr:@cross/dir",
+        "jsr:@cross/env@1",
+        "jsr:@cross/runtime",
+        "jsr:@cross/utils@0.10",
+        "jsr:@std/path@0.221"
+      ]
+    },
+    "@cross/runtime@1.2.1": {
+      "integrity": "f462fcf2fd678f9073291b4e55209b90f58c8d508764a84205d178abdcf22fc9"
+    },
+    "@cross/service@1.0.7": {
+      "integrity": "1f23ade47e5d8d188a98ecf71f7c97e8f5498d80ad1269d7c1a1e20cef5b6085",
+      "dependencies": [
+        "jsr:@cross/env@^1.0.2",
+        "jsr:@cross/fs@^0.0.9",
+        "jsr:@cross/runtime",
+        "jsr:@cross/utils@0.11",
+        "jsr:@std/path@0.221"
+      ]
+    },
+    "@cross/utils@0.7.1": {
+      "integrity": "6cc50ad31b0904364188c43d10e3d4888d817a3d415528b014c27deb8a35564e",
+      "dependencies": [
+        "jsr:@cross/runtime"
+      ]
+    },
+    "@cross/utils@0.9.4": {
+      "integrity": "f097efb177428c78197d97499160467b00b780d11405fc7fd429a6ad74a84192",
+      "dependencies": [
+        "jsr:@cross/runtime"
+      ]
+    },
+    "@cross/utils@0.10.0": {
+      "integrity": "476c980309a5df9a86bc205a118647612c614345cbd1373f3018fdbfa6474efd",
+      "dependencies": [
+        "jsr:@cross/runtime"
+      ]
+    },
+    "@cross/utils@0.11.0": {
+      "integrity": "400632a6acfbaf47aca3cd080e4eb82867974ed33523558257710b70fb88e5fe",
+      "dependencies": [
+        "jsr:@cross/fs@^0.0.8",
+        "jsr:@cross/runtime"
+      ]
+    },
+    "@std/assert@0.221.0": {
+      "integrity": "a5f1aa6e7909dbea271754fd4ab3f4e687aeff4873b4cef9a320af813adb489a"
+    },
     "@std/assert@1.0.19": {
       "integrity": "eaada96ee120cb980bc47e040f82814d786fe8162ecc53c91d8df60b8755991e",
       "dependencies": [
@@ -62,6 +155,12 @@
     },
     "@std/io@0.225.3": {
       "integrity": "27b07b591384d12d7b568f39e61dff966b8230559122df1e9fd11cc068f7ddd1"
+    },
+    "@std/path@0.221.0": {
+      "integrity": "0a36f6b17314ef653a3a1649740cc8db51b25a133ecfe838f20b79a56ebe0095",
+      "dependencies": [
+        "jsr:@std/assert@0.221"
+      ]
     },
     "@std/path@1.1.4": {
       "integrity": "1d2d43f39efb1b42f0b1882a25486647cb851481862dc7313390b2bb044314b5",
@@ -101,6 +200,7 @@
     "dependencies": [
       "jsr:@cliffy/ansi@1",
       "jsr:@cliffy/keypress@1",
+      "jsr:@cross/service@^1.0.7",
       "jsr:@std/assert@1.0.19",
       "jsr:@std/fmt@^1.0.9",
       "jsr:@std/path@^1.1.4",

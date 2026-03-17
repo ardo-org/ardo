@@ -5,8 +5,9 @@ import { formatStatus, getServiceState } from "../service/status.ts";
 import {
   installService,
   isServiceInstalled,
+  startService,
+  stopService,
   uninstallService,
-  UnsupportedPlatformError,
 } from "../service/autostart.ts";
 import { detectAll } from "../agents/detector.ts";
 import { loadConfig, saveConfig } from "../config/store.ts";
@@ -73,20 +74,33 @@ export async function ensureAuthenticated(): Promise<boolean> {
 async function cmdStart(): Promise<void> {
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
-  const result = await startDaemon();
-  if (result.already) {
-    console.log(`Coco is already running on http://localhost:${result.port}`);
+  const serviceInstalled = await isServiceInstalled();
+  if (serviceInstalled) {
+    await startService();
+    const config = await loadConfig();
+    console.log(`Coco is running on http://localhost:${config.port}`);
   } else {
-    console.log(`Coco is running on http://localhost:${result.port}`);
+    const result = await startDaemon();
+    if (result.already) {
+      console.log(`Coco is already running on http://localhost:${result.port}`);
+    } else {
+      console.log(`Coco is running on http://localhost:${result.port}`);
+    }
   }
 }
 
 async function cmdStop(): Promise<void> {
-  const stopped = await stopDaemon();
-  if (stopped) {
+  const serviceInstalled = await isServiceInstalled();
+  if (serviceInstalled) {
+    await stopService();
     console.log("Coco stopped.");
   } else {
-    console.log("Coco is not running.");
+    const stopped = await stopDaemon();
+    if (stopped) {
+      console.log("Coco stopped.");
+    } else {
+      console.log("Coco is not running.");
+    }
   }
 }
 
@@ -100,8 +114,12 @@ async function cmdRestart(): Promise<void> {
 }
 
 async function cmdStatus(): Promise<void> {
-  const state = await getServiceState();
-  console.log(formatStatus(state));
+  const [state, config] = await Promise.all([
+    getServiceState(),
+    loadConfig().catch(() => null),
+  ]);
+  const agentNames = config?.agents.map((a) => a.agentName) ?? [];
+  console.log(formatStatus(state, agentNames));
   Deno.exit(state.running ? 0 : 1);
 }
 
@@ -238,6 +256,9 @@ async function cmdDoctor(): Promise<void> {
 }
 
 async function cmdInstallService(): Promise<void> {
+  // Spec §3.4: stop any running daemon before installing system service
+  await stopDaemon();
+
   try {
     const result = await installService();
     if (result.installed) {
@@ -250,10 +271,6 @@ async function cmdInstallService(): Promise<void> {
       console.log("Coco service is already installed.");
     }
   } catch (err) {
-    if (err instanceof UnsupportedPlatformError) {
-      console.log(err.message);
-      Deno.exit(0);
-    }
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error: ${message}`);
     Deno.exit(1);
@@ -276,10 +293,6 @@ async function cmdUninstallService(): Promise<void> {
       console.log("Coco service is not installed.");
     }
   } catch (err) {
-    if (err instanceof UnsupportedPlatformError) {
-      console.log(err.message);
-      Deno.exit(0);
-    }
     const message = err instanceof Error ? err.message : String(err);
     console.error(`Error: ${message}`);
     Deno.exit(1);
@@ -502,8 +515,12 @@ async function main() {
     default:
       // T038: non-TTY bare invocation → print status and exit 0
       if (!Deno.stdout.isTerminal()) {
-        const state = await getServiceState();
-        console.log(formatStatus(state));
+        const [state, config] = await Promise.all([
+          getServiceState(),
+          loadConfig().catch(() => null),
+        ]);
+        const agentNames = config?.agents.map((a) => a.agentName) ?? [];
+        console.log(formatStatus(state, agentNames));
         Deno.exit(0);
         return;
       }

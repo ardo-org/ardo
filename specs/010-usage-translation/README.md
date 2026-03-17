@@ -3,21 +3,21 @@ status: complete
 created: 2026-03-16
 priority: medium
 tags:
-- proxy
-- streaming
-- usage
-- tokens
-- anthropic
-- openai
-- claude-code
-- cline
-- codex
+  - proxy
+  - streaming
+  - usage
+  - tokens
+  - anthropic
+  - openai
+  - claude-code
+  - cline
+  - codex
 created_at: 2026-03-16T11:32:42.956761Z
 updated_at: 2026-03-16T11:43:24.235442Z
 completed_at: 2026-03-16T11:43:24.235442Z
 transitions:
-- status: complete
-  at: 2026-03-16T11:43:24.235442Z
+  - status: complete
+    at: 2026-03-16T11:43:24.235442Z
 ---
 
 # Usage Data Translation Layer

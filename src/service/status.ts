@@ -1,9 +1,11 @@
 import { loadConfig } from "../config/store.ts";
 import { getDaemonPid } from "./daemon.ts";
 import { getStoredToken, isTokenValid } from "../cli/auth.ts";
+import { isServiceInstalled, isServiceRunning } from "./autostart.ts";
 
 export interface ServiceState {
   running: boolean;
+  serviceInstalled: boolean;
   pid: number | null;
   port: number | null;
   authStatus: "authenticated" | "unauthenticated" | "unknown";
@@ -11,18 +13,20 @@ export interface ServiceState {
 
 /**
  * Compute the current service state by:
- * 1. Reading the PID file and checking liveness
- * 2. Reading CocoConfig for the port
- * 3. Checking stored token validity
+ * 1. Checking whether the OS service is installed
+ * 2. If installed — checking service running state via OS manager
+ * 3. If not installed — reading the PID file and checking liveness + /health
+ * 4. Reading CocoConfig for the port
+ * 5. Checking stored token validity
  */
 export async function getServiceState(): Promise<ServiceState> {
-  const [pid, config, token] = await Promise.all([
+  const [serviceInstalled, pid, config, token] = await Promise.all([
+    isServiceInstalled().catch(() => false),
     getDaemonPid(),
     loadConfig().catch(() => null),
     getStoredToken().catch(() => null),
   ]);
 
-  const running = pid !== null;
   const port = config?.port ?? null;
 
   let authStatus: ServiceState["authStatus"] = "unknown";
@@ -31,6 +35,14 @@ export async function getServiceState(): Promise<ServiceState> {
   } catch {
     authStatus = "unknown";
   }
+
+  if (serviceInstalled) {
+    const running = await isServiceRunning().catch(() => false);
+    return { running, serviceInstalled, pid: null, port, authStatus };
+  }
+
+  // Coco-managed daemon: check PID + /health
+  const running = pid !== null;
 
   // If running, confirm reachability via /health (best-effort)
   if (running && port !== null) {
@@ -42,30 +54,50 @@ export async function getServiceState(): Promise<ServiceState> {
       });
       clearTimeout(timeout);
       if (!resp.ok) {
-        return { running: false, pid: null, port, authStatus };
+        return {
+          running: false,
+          serviceInstalled,
+          pid: null,
+          port,
+          authStatus,
+        };
       }
     } catch {
       // Health check failed — treat as not running
-      return { running: false, pid: null, port, authStatus };
+      return { running: false, serviceInstalled, pid: null, port, authStatus };
     }
   }
 
-  return { running, pid, port, authStatus };
+  return { running, serviceInstalled, pid, port, authStatus };
 }
 
 /**
  * Format a ServiceState for human-readable `coco status` output.
+ * agents: list of configured agent names from CocoConfig.agents
  */
-export function formatStatus(state: ServiceState): string {
-  const statusLine = state.running && state.port !== null
-    ? `Status:  Running on http://localhost:${state.port}`
-    : "Status:  Not running";
+export function formatStatus(state: ServiceState, agents: string[]): string {
+  const serviceLine = state.serviceInstalled
+    ? "Service:  Installed"
+    : "Service:  Not installed";
+
+  let stateLine: string;
+  if (state.running && state.port !== null) {
+    stateLine = `State:    Running at http://localhost:${state.port}`;
+  } else if (state.serviceInstalled) {
+    stateLine = "State:    Stopped";
+  } else {
+    stateLine = "State:    Not running";
+  }
+
+  const agentsLine = agents.length > 0
+    ? `Agents:   ${agents.join(", ")}`
+    : "Agents:   none";
 
   const authLine = state.authStatus === "authenticated"
-    ? "Copilot: Authenticated ✓"
+    ? "Copilot:  Authenticated \u2713"
     : state.authStatus === "unauthenticated"
-    ? "Copilot: Not authenticated"
-    : "Copilot: Unknown";
+    ? "Copilot:  Not authenticated"
+    : "Copilot:  Unknown";
 
-  return `${statusLine}\n${authLine}`;
+  return `${serviceLine}\n${stateLine}\n${agentsLine}\n${authLine}`;
 }

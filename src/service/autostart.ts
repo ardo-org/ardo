@@ -1,5 +1,10 @@
 import { join } from "@std/path";
 import { findBinary } from "../lib/process.ts";
+import {
+  generateConfig as crossGenerateConfig,
+  installService as crossInstallService,
+  uninstallService as crossUninstallService,
+} from "@cross/service";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -307,15 +312,79 @@ async function uninstallLinux(
 }
 
 // ---------------------------------------------------------------------------
+// Windows SCM service (via @cross/service)
+// ---------------------------------------------------------------------------
+
+const WIN_SERVICE_NAME = "coco";
+
+async function installWindows(
+  opts: ServiceInstallOptions,
+): Promise<ServiceInstallResult> {
+  const cocoPath = await findBinary("coco");
+  if (!cocoPath) {
+    throw new Error(
+      "coco is not installed globally. Run: deno task install",
+    );
+  }
+
+  const cmd = `${cocoPath} --daemon`;
+  let configContent: string;
+  try {
+    configContent = await crossGenerateConfig({
+      system: false,
+      name: WIN_SERVICE_NAME,
+      cmd,
+    });
+  } catch {
+    configContent =
+      `sc create ${WIN_SERVICE_NAME} binPath="${cocoPath} --daemon"`;
+  }
+  const configPath = "Windows SCM registry";
+
+  if (opts.dryRun) {
+    return { installed: true, binaryPath: cocoPath, configPath, configContent };
+  }
+
+  await crossInstallService(
+    { system: false, name: WIN_SERVICE_NAME, cmd },
+    false,
+  );
+  return { installed: true, binaryPath: cocoPath, configPath, configContent };
+}
+
+async function uninstallWindows(
+  opts: ServiceInstallOptions,
+): Promise<ServiceUninstallResult> {
+  const installed = await isWindowsServiceRegistered();
+  if (!installed) return { removed: false };
+  if (opts.dryRun) return { removed: true };
+  await crossUninstallService({ system: false, name: WIN_SERVICE_NAME });
+  return { removed: true };
+}
+
+async function isWindowsServiceRegistered(): Promise<boolean> {
+  try {
+    const { code } = await new Deno.Command("sc.exe", {
+      args: ["query", WIN_SERVICE_NAME],
+      stdout: "null",
+      stderr: "null",
+    }).output();
+    return code === 0;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
 /**
- * Register the Coco daemon with the native OS login service manager.
+ * Register the Coco daemon with the native OS service manager.
  *
  * - macOS: writes a LaunchAgent plist and runs `launchctl bootstrap`
  * - Linux (systemd): writes a user unit file and runs `systemctl --user enable --now`
- * - Other: throws UnsupportedPlatformError
+ * - Windows: registers with SCM via @cross/service
  */
 export async function installService(
   opts: ServiceInstallOptions = {},
@@ -323,11 +392,12 @@ export async function installService(
   const os = Deno.build.os;
   if (os === "darwin") return await installMacOS(opts);
   if (os === "linux") return await installLinux(opts);
-  throw new UnsupportedPlatformError(os === "windows" ? "Windows" : os);
+  if (os === "windows") return await installWindows(opts);
+  throw new UnsupportedPlatformError(os);
 }
 
 /**
- * Deregister the Coco daemon from the OS login service manager.
+ * Deregister the Coco daemon from the OS service manager.
  * Idempotent — returns `{ removed: false }` if not installed.
  */
 export async function uninstallService(
@@ -336,31 +406,133 @@ export async function uninstallService(
   const os = Deno.build.os;
   if (os === "darwin") return await uninstallMacOS(opts);
   if (os === "linux") return await uninstallLinux(opts);
-  throw new UnsupportedPlatformError(os === "windows" ? "Windows" : os);
+  if (os === "windows") return await uninstallWindows(opts);
+  throw new UnsupportedPlatformError(os);
 }
 
 /**
- * Returns true if the service config file exists on disk.
+ * Returns true if the service config file (or SCM registration) exists.
  */
 export async function isServiceInstalled(
   opts: Pick<ServiceInstallOptions, "home"> = {},
 ): Promise<boolean> {
   const home = homeDir(opts.home);
   const os = Deno.build.os;
-  let path: string;
   if (os === "darwin") {
-    path = macOSPlistPath(home);
-  } else if (os === "linux") {
-    path = linuxUnitPath(home);
-  } else {
-    return false;
+    try {
+      await Deno.stat(macOSPlistPath(home));
+      return true;
+    } catch {
+      return false;
+    }
   }
-  try {
-    await Deno.stat(path);
-    return true;
-  } catch {
-    return false;
+  if (os === "linux") {
+    try {
+      await Deno.stat(linuxUnitPath(home));
+      return true;
+    } catch {
+      return false;
+    }
   }
+  if (os === "windows") {
+    return await isWindowsServiceRegistered();
+  }
+  return false;
+}
+
+/**
+ * Returns true if the OS-managed service process is currently running.
+ */
+export async function isServiceRunning(): Promise<boolean> {
+  const os = Deno.build.os;
+  if (os === "darwin") {
+    try {
+      const { code, stdout } = await new Deno.Command("launchctl", {
+        args: ["list", MACOS_PLIST_LABEL],
+        stdout: "piped",
+        stderr: "null",
+      }).output();
+      if (code !== 0) return false;
+      const out = new TextDecoder().decode(stdout);
+      return out.includes('"PID"');
+    } catch {
+      return false;
+    }
+  }
+  if (os === "linux") {
+    try {
+      const { code } = await new Deno.Command("systemctl", {
+        args: ["--user", "is-active", LINUX_SERVICE_NAME],
+        stdout: "null",
+        stderr: "null",
+      }).output();
+      return code === 0;
+    } catch {
+      return false;
+    }
+  }
+  if (os === "windows") {
+    try {
+      const { code, stdout } = await new Deno.Command("sc.exe", {
+        args: ["query", WIN_SERVICE_NAME],
+        stdout: "piped",
+        stderr: "null",
+      }).output();
+      if (code !== 0) return false;
+      const out = new TextDecoder().decode(stdout);
+      return out.includes("RUNNING");
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
+/**
+ * Start the installed OS-managed service.
+ */
+export async function startService(): Promise<void> {
+  const os = Deno.build.os;
+  if (os === "darwin") {
+    await runCommand(["launchctl", "start", MACOS_PLIST_LABEL]);
+    return;
+  }
+  if (os === "linux") {
+    await runCommand(["systemctl", "--user", "start", LINUX_SERVICE_NAME]);
+    return;
+  }
+  if (os === "windows") {
+    await runCommand(["sc.exe", "start", WIN_SERVICE_NAME]);
+    return;
+  }
+  throw new Error(`startService: unsupported platform ${os}`);
+}
+
+/**
+ * Stop the installed OS-managed service.
+ */
+export async function stopService(): Promise<void> {
+  const os = Deno.build.os;
+  if (os === "darwin") {
+    await runCommand(["launchctl", "stop", MACOS_PLIST_LABEL], {
+      ignoreFailure: true,
+    });
+    return;
+  }
+  if (os === "linux") {
+    await runCommand(
+      ["systemctl", "--user", "stop", LINUX_SERVICE_NAME],
+      { ignoreFailure: true },
+    );
+    return;
+  }
+  if (os === "windows") {
+    await runCommand(["sc.exe", "stop", WIN_SERVICE_NAME], {
+      ignoreFailure: true,
+    });
+    return;
+  }
+  throw new Error(`stopService: unsupported platform ${os}`);
 }
 
 // ---------------------------------------------------------------------------
