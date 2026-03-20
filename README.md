@@ -42,7 +42,9 @@ Coding agent → coco proxy (127.0.0.1:11434) → GitHub Copilot API
 
 ## Installation
 
-### From Source (Development / Try It Out)
+<details>
+<summary>📖 From Source (Development / Try It Out)</summary>
+
 
 Clone the repository and install globally with a single command:
 
@@ -66,13 +68,17 @@ After installation, `coco` is available in any terminal:
 
 ```bash
 coco --version
+</details>
+
 # Coco v0.2.0
 ```
 
 > **Note**: Ensure `~/.deno/bin` is in your `PATH`. The Deno installer adds this
 > automatically.
 
-### npm (No Deno Required)
+<details>
+<summary>📖 npm (No Deno Required)</summary>
+
 
 **Node.js ≥18 required**
 
@@ -90,20 +96,32 @@ The npm package automatically downloads the native binary for your platform:
 | Linux   | arm64        | ✅     |
 | Windows | x64          | ✅     |
 
-### JSR (Deno Runtime)
+</details>
+
+<details>
+<summary>📖 JSR (Deno Runtime)</summary>
+
 
 ```bash
 deno install -A -g jsr:@myty/coco
 ```
 
-### Direct Binary Download
+</details>
+
+<details>
+<summary>📖 Direct Binary Download</summary>
+
 
 Download platform-specific binaries from
 [GitHub Releases](https://github.com/myty/coco/releases).
 
+</details>
+
 ## Usage
 
-### TUI (recommended for first-time setup)
+<details>
+<summary>📖 TUI (recommended for first-time setup)</summary>
+
 
 ```bash
 coco          # opens the interactive TUI
@@ -128,7 +146,11 @@ Space: toggle   Enter: apply   q: quit
 Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 **q** quits without changes.
 
-### CLI Commands
+</details>
+
+<details>
+<summary>📖 CLI Commands</summary>
+
 
 | Command                        | Description                                                 |
 | ------------------------------ | ----------------------------------------------------------- |
@@ -147,9 +169,15 @@ Keys: **Space** toggles selection, **Enter** applies, **↑/↓** moves cursor,
 | `coco --help`                  | Show help                                                   |
 | `coco --version`               | Show version                                                |
 
-### Quick Start
+</details>
+
+<details>
+<summary>🚀 Quick Start</summary>
+
 
 ```bash
+</details>
+
 # 1. Install coco
 deno task install
 
@@ -169,13 +197,17 @@ coco install-service
 # coco uninstall-service
 ```
 
-### Supported Agents
+<details>
+<summary>📖 Supported Agents</summary>
+
 
 | Agent        | Binary         | Extension                |
 | ------------ | -------------- | ------------------------ |
 | Claude Code  | `claude`       | `anthropic.claude-code`  |
 | Cline        | `cline`        | `saoudrizwan.claude-dev` |
 | Codex        | `codex`        | —                        |
+
+</details>
 
 ## Architecture
 
@@ -215,24 +247,40 @@ deno task compile
 <details>
 <summary>Common Issues</summary>
 
-### "Authentication failed"
+<details>
+<summary>📖 "Authentication failed"</summary>
+
 
 - Verify you have an active GitHub Copilot subscription
 - Try again — device flow tokens sometimes need a moment
 
-### "Port already in use"
+</details>
+
+<details>
+<summary>📖 "Port already in use"</summary>
+
 
 - Coco automatically scans for an available port starting from 11434
 - Check `coco status` to see the actual port in use
 
-### "Agent is misconfigured"
+</details>
+
+<details>
+<summary>🔧 "Agent is misconfigured"</summary>
+
 
 - Run `coco unconfigure <agent>` then `coco configure <agent>` again
 - Run `coco doctor` for a full status report
 
-### macOS "Cannot open" error (binary download)
+</details>
+
+<details>
+<summary>📖 macOS "Cannot open" error (binary download)</summary>
+
 
 - Run `xattr -d com.apple.quarantine coco` to remove quarantine
+
+</details>
 
 </details>
 
