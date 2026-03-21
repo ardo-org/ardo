@@ -44,6 +44,19 @@ export async function findBinary(name: string): Promise<string | null> {
 }
 
 /**
+ * Search for the first available binary in priority order.
+ */
+export async function findFirstBinary(
+  names: readonly string[],
+): Promise<string | null> {
+  for (const name of names) {
+    const found = await findBinary(name);
+    if (found) return found;
+  }
+  return null;
+}
+
+/**
  * Check whether a process identified by PID is alive.
  * Uses `kill -0` on Unix and PowerShell Get-Process on Windows.
  */

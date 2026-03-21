@@ -40,7 +40,7 @@ Deno.test({
       const result = await getServiceManager({ home }).install({
         dryRun: true,
       });
-      assertStringIncludes(result.configContent, "com.coco");
+      assertStringIncludes(result.configContent, "com.ardo");
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "RunAtLoad");
       assertStringIncludes(result.configContent, "KeepAlive");
@@ -71,7 +71,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, "Library/LaunchAgents");
-      assertStringIncludes(result.configPath, "com.coco.plist");
+      assertStringIncludes(result.configPath, "com.ardo.plist");
     } catch (err) {
       if (
         err instanceof Error && err.message.includes("not installed globally")
@@ -163,7 +163,7 @@ Deno.test({
         dryRun: true,
       });
       assertStringIncludes(result.configPath, ".config/systemd/user");
-      assertStringIncludes(result.configPath, "coco.service");
+      assertStringIncludes(result.configPath, "ardo.service");
     } catch (err) {
       if (
         err instanceof Error &&
@@ -198,7 +198,7 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when plist exists (macOS)",
+  name: "isServiceInstalled — returns true when plist exists (macOS legacy)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();
@@ -215,7 +215,8 @@ Deno.test({
 });
 
 Deno.test({
-  name: "isServiceInstalled — returns true when unit file exists (Linux)",
+  name:
+    "isServiceInstalled — returns true when unit file exists (Linux legacy)",
   ignore: Deno.build.os !== "linux",
   async fn() {
     const home = await makeTempHome();
@@ -256,8 +257,42 @@ Deno.test({
 });
 
 Deno.test({
+  name: "isServiceInstalled — returns true when Ardo plist exists (macOS)",
+  ignore: Deno.build.os !== "darwin",
+  async fn() {
+    const home = await makeTempHome();
+    const plistDir = `${home}/Library/LaunchAgents`;
+    await Deno.mkdir(plistDir, { recursive: true });
+    await Deno.writeTextFile(`${plistDir}/com.ardo.plist`, "<plist/>");
+    try {
+      const installed = await getServiceManager({ home }).isInstalled();
+      assertEquals(installed, true);
+    } finally {
+      await cleanup(home);
+    }
+  },
+});
+
+Deno.test({
+  name: "isServiceInstalled — returns true when Ardo unit file exists (Linux)",
+  ignore: Deno.build.os !== "linux",
+  async fn() {
+    const home = await makeTempHome();
+    const unitDir = `${home}/.config/systemd/user`;
+    await Deno.mkdir(unitDir, { recursive: true });
+    await Deno.writeTextFile(`${unitDir}/ardo.service`, "[Unit]");
+    try {
+      const installed = await getServiceManager({ home }).isInstalled();
+      assertEquals(installed, true);
+    } finally {
+      await cleanup(home);
+    }
+  },
+});
+
+Deno.test({
   name:
-    "uninstallService dryRun — returns removed: true when file exists (macOS)",
+    "uninstallService dryRun — returns removed: true when legacy file exists (macOS)",
   ignore: Deno.build.os !== "darwin",
   async fn() {
     const home = await makeTempHome();
@@ -286,11 +321,36 @@ Deno.test({
 // ---------------------------------------------------------------------------
 
 Deno.test({
+  name:
+    "uninstallService dryRun — returns removed: true when Ardo file exists (macOS)",
+  ignore: Deno.build.os !== "darwin",
+  async fn() {
+    const home = await makeTempHome();
+    const plistDir = `${home}/Library/LaunchAgents`;
+    await Deno.mkdir(plistDir, { recursive: true });
+    await Deno.writeTextFile(`${plistDir}/com.ardo.plist`, "<plist/>");
+    try {
+      const result = await getServiceManager({ home }).uninstall({
+        dryRun: true,
+      });
+      assertEquals(result.removed, true);
+      const stillExists = await Deno.stat(`${plistDir}/com.ardo.plist`).then(
+        () => true,
+        () => false,
+      );
+      assertEquals(stillExists, true, "dryRun should not remove file");
+    } finally {
+      await cleanup(home);
+    }
+  },
+});
+
+Deno.test({
   name: "UnsupportedPlatformError has correct message format",
   fn() {
     const err = new UnsupportedPlatformError("Windows");
     assertStringIncludes(err.message, "coming soon");
-    assertStringIncludes(err.message, "coco start");
+    assertStringIncludes(err.message, "ardo start");
     assertEquals(err.name, "UnsupportedPlatformError");
   },
 });

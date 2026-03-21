@@ -21,12 +21,33 @@ import {
 } from "../tui/render.ts";
 import { keypress, mapKey } from "../tui/input.ts";
 import { fetchModelList } from "../copilot/models.ts";
+import { basename } from "@std/path";
+
+const APP_NAME = "Ardo";
+const CANONICAL_CLI_NAME = "ardo";
+const LEGACY_CLI_NAME = "coco";
+
+function inferInvocationName(): string | null {
+  const fromEnv = Deno.env.get("_");
+  if (fromEnv) return basename(fromEnv).toLowerCase();
+  return basename(Deno.execPath()).toLowerCase();
+}
+
+function maybeWarnLegacyInvocation(): void {
+  const invokedAsLegacy = inferInvocationName()?.startsWith(LEGACY_CLI_NAME);
+  if (invokedAsLegacy) {
+    console.error(
+      `Warning: '${LEGACY_CLI_NAME}' is deprecated; use '${CANONICAL_CLI_NAME}' instead.`,
+    );
+  }
+}
 
 function showHelp() {
   console.log(`
-Coco — Local AI Gateway
+${APP_NAME} - Local AI Gateway
 
-Usage: coco [COMMAND] [OPTIONS]
+Usage: ${CANONICAL_CLI_NAME} [COMMAND] [OPTIONS]
+Legacy alias: ${LEGACY_CLI_NAME} [COMMAND] [OPTIONS]
 
 Commands:
   (none)              Open the interactive TUI
@@ -34,7 +55,7 @@ Commands:
   stop                Stop the background proxy service
   restart             Restart the background proxy service
   status              Show service and auth status
-  configure <agent>   Configure an agent to use Coco
+  configure <agent>   Configure an agent to use ${APP_NAME}
   unconfigure <agent> Revert agent configuration
   doctor              Scan and report all agent states
   models              List available Copilot model IDs
@@ -49,7 +70,7 @@ Options:
 }
 
 function showVersion() {
-  console.log(`Coco v${VERSION}`);
+  console.log(`${APP_NAME} v${VERSION}`);
 }
 
 export async function ensureAuthenticated(): Promise<boolean> {
@@ -76,13 +97,15 @@ async function cmdStart(): Promise<void> {
   if (serviceInstalled) {
     await svc.start();
     const config = await loadConfig();
-    console.log(`Coco is running on http://localhost:${config.port}`);
+    console.log(`${APP_NAME} is running on http://localhost:${config.port}`);
   } else {
     const result = await dm.start();
     if (result.already) {
-      console.log(`Coco is already running on http://localhost:${result.port}`);
+      console.log(
+        `${APP_NAME} is already running on http://localhost:${result.port}`,
+      );
     } else {
-      console.log(`Coco is running on http://localhost:${result.port}`);
+      console.log(`${APP_NAME} is running on http://localhost:${result.port}`);
     }
   }
 }
@@ -93,24 +116,24 @@ async function cmdStop(): Promise<void> {
   const serviceInstalled = await svc.isInstalled();
   if (serviceInstalled) {
     await svc.stop();
-    console.log("Coco stopped.");
+    console.log(`${APP_NAME} stopped.`);
   } else {
     const stopped = await dm.stop();
     if (stopped) {
-      console.log("Coco stopped.");
+      console.log(`${APP_NAME} stopped.`);
     } else {
-      console.log("Coco is not running.");
+      console.log(`${APP_NAME} is not running.`);
     }
   }
 }
 
 async function cmdRestart(): Promise<void> {
   const stopped = await getDaemonManager().stop();
-  if (stopped) console.log("Coco stopped.");
+  if (stopped) console.log(`${APP_NAME} stopped.`);
   const authenticated = await ensureAuthenticated();
   if (!authenticated) Deno.exit(1);
   const result = await getDaemonManager().start();
-  console.log(`Coco is running on http://localhost:${result.port}`);
+  console.log(`${APP_NAME} is running on http://localhost:${result.port}`);
 }
 
 async function cmdStatus(): Promise<void> {
@@ -126,7 +149,7 @@ async function cmdStatus(): Promise<void> {
 async function cmdConfigure(agentName: string | undefined): Promise<void> {
   if (!agentName) {
     console.error("Error: 'configure' requires an agent name.");
-    console.error("Usage: coco configure <agent>");
+    console.error(`Usage: ${CANONICAL_CLI_NAME} configure <agent>`);
     Deno.exit(1);
   }
 
@@ -172,7 +195,7 @@ async function cmdConfigure(agentName: string | undefined): Promise<void> {
 async function cmdUnconfigure(agentName: string | undefined): Promise<void> {
   if (!agentName) {
     console.error("Error: 'unconfigure' requires an agent name.");
-    console.error("Usage: coco unconfigure <agent>");
+    console.error(`Usage: ${CANONICAL_CLI_NAME} unconfigure <agent>`);
     Deno.exit(1);
   }
 
@@ -196,7 +219,7 @@ async function cmdUnconfigure(agentName: string | undefined): Promise<void> {
 
 async function cmdDoctor(): Promise<void> {
   const divider = "──────────────────────────────────────────────";
-  console.log("Coco Doctor");
+  console.log(`${APP_NAME} Doctor`);
   console.log(divider);
 
   const config = await loadConfig();
@@ -262,13 +285,13 @@ async function cmdInstallService(): Promise<void> {
   try {
     const result = await getServiceManager().install();
     if (result.installed) {
-      console.log("Coco service installed.");
+      console.log(`${APP_NAME} service installed.`);
       console.log(`  Config: ${result.configPath}`);
       console.log(`  Binary: ${result.binaryPath}`);
       const config = await loadConfig();
-      console.log(`Coco is running on http://localhost:${config.port}`);
+      console.log(`${APP_NAME} is running on http://localhost:${config.port}`);
     } else {
-      console.log("Coco service is already installed.");
+      console.log(`${APP_NAME} service is already installed.`);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -282,16 +305,16 @@ async function cmdUninstallService(): Promise<void> {
     const svc = getServiceManager();
     const installed = await svc.isInstalled();
     if (!installed) {
-      console.log("Coco service is not installed.");
+      console.log(`${APP_NAME} service is not installed.`);
       Deno.exit(0);
     }
     const result = await svc.uninstall();
     if (result.removed) {
       console.log(
-        "Coco service removed. The daemon will not start on next login.",
+        `${APP_NAME} service removed. The daemon will not start on next login.`,
       );
     } else {
-      console.log("Coco service is not installed.");
+      console.log(`${APP_NAME} service is not installed.`);
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -314,7 +337,9 @@ async function cmdModels(): Promise<void> {
   for (const id of models) {
     console.log(`  ${id}`);
   }
-  console.log("\nRun 'coco configure <agent>' to route an agent through Coco.");
+  console.log(
+    `\nRun '${CANONICAL_CLI_NAME} configure <agent>' to route an agent through ${APP_NAME}.`,
+  );
 }
 
 async function cmdModelPolicy(policyArg: string | undefined): Promise<void> {
@@ -457,6 +482,8 @@ async function runTUI(): Promise<void> {
 
 async function main() {
   const args = Deno.args;
+
+  maybeWarnLegacyInvocation();
 
   if (args.includes("--help") || args.includes("-h")) {
     showHelp();

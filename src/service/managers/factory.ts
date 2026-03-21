@@ -5,7 +5,7 @@ import type {
   ServiceUninstallResult,
 } from "../autostart.ts";
 import type { DaemonManager, ServiceManager } from "./interfaces.ts";
-import { CocoDaemonManager } from "./daemon.ts";
+import { ArdoDaemonManager } from "./daemon.ts";
 import { MacOSServiceManager } from "./macos.ts";
 import { LinuxServiceManager } from "./linux.ts";
 import { WindowsServiceManager } from "./windows.ts";
@@ -53,8 +53,8 @@ export function getServiceManager(opts?: { home?: string }): ServiceManager {
 }
 
 /**
- * Returns the DaemonManager for Coco's PID-based background daemon.
+ * Returns the DaemonManager for Ardo's PID-based background daemon.
  */
 export function getDaemonManager(): DaemonManager {
-  return new CocoDaemonManager();
+  return new ArdoDaemonManager();
 }

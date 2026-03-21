@@ -22,7 +22,8 @@
     "exclude": ["scripts/"]
   },
   "tasks": {
-    "install": "deno install --global --allow-all --config deno.json -n coco --force src/cli/main.ts",
+    "install": "deno install --global --allow-all --config deno.json -n ardo --force src/cli/main.ts",
+    "install:legacy": "deno install --global --allow-all --config deno.json -n coco --force src/cli/main.ts",
     "dev": "deno run -A src/cli/main.ts",
     "test": "deno test --allow-all",
     "lint": "deno lint",
@@ -31,6 +32,7 @@
     "check": "deno check src/**/*.ts tests/**/*.ts",
     "quality": "deno lint && deno fmt --check && deno check && deno test --allow-all",
     "sync-version": "deno run -A scripts/sync-version.ts",
-    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --output bin/coco src/cli/main.ts"
+    "compile": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --output bin/ardo src/cli/main.ts",
+    "compile:legacy": "deno compile --allow-net --allow-env --allow-run --allow-read --allow-write --output bin/coco src/cli/main.ts"
   }
 }

@@ -1,4 +1,4 @@
-import { findBinary } from "../../lib/process.ts";
+import { findFirstBinary } from "../../lib/process.ts";
 import {
   generateConfig as crossGenerateConfig,
   installService as crossInstallService,
@@ -15,7 +15,7 @@ import type { ServiceManager } from "./interfaces.ts";
 // Constants
 // ---------------------------------------------------------------------------
 
-const SERVICE_NAME = "coco";
+const SERVICE_NAME = "ardo";
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -60,12 +60,33 @@ export class WindowsServiceManager implements ServiceManager {
   async install(
     opts: ServiceInstallOptions = {},
   ): Promise<ServiceInstallResult> {
-    const cocoPath = await findBinary("coco");
-    if (!cocoPath) {
-      throw new Error("coco is not installed globally. Run: deno task install");
+    const ardoPath = await findFirstBinary(["ardo", "coco"]);
+    if (!ardoPath) {
+      if (opts.dryRun) {
+        const cmd = "ardo --daemon";
+        let configContent: string;
+        try {
+          configContent = await crossGenerateConfig({
+            system: false,
+            name: SERVICE_NAME,
+            cmd,
+          });
+        } catch {
+          configContent = `sc create ${SERVICE_NAME} binPath="ardo --daemon"`;
+        }
+        return {
+          installed: true,
+          binaryPath: "ardo",
+          configPath: "Windows SCM registry",
+          configContent,
+        };
+      }
+      throw new Error(
+        "Neither 'ardo' nor legacy 'coco' is installed globally. Run: deno task install",
+      );
     }
 
-    const cmd = `${cocoPath} --daemon`;
+    const cmd = `${ardoPath} --daemon`;
     let configContent: string;
     try {
       configContent = await crossGenerateConfig({
@@ -75,14 +96,14 @@ export class WindowsServiceManager implements ServiceManager {
       });
     } catch {
       configContent =
-        `sc create ${SERVICE_NAME} binPath="${cocoPath} --daemon"`;
+        `sc create ${SERVICE_NAME} binPath="${ardoPath} --daemon"`;
     }
     const configPath = "Windows SCM registry";
 
     if (opts.dryRun) {
       return {
         installed: true,
-        binaryPath: cocoPath,
+        binaryPath: ardoPath,
         configPath,
         configContent,
       };
@@ -92,7 +113,7 @@ export class WindowsServiceManager implements ServiceManager {
       { system: false, name: SERVICE_NAME, cmd },
       false,
     );
-    return { installed: true, binaryPath: cocoPath, configPath, configContent };
+    return { installed: true, binaryPath: ardoPath, configPath, configContent };
   }
 
   async uninstall(

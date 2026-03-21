@@ -29,19 +29,21 @@ async function runCoco(
 
 Deno.test("CLI contract: --version prints version string and exits 0", async () => {
   const result = await runCoco(["--version"]);
-  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
+  assertMatch(result.stdout, /^Ardo v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: -v alias prints version string and exits 0", async () => {
   const result = await runCoco(["-v"]);
-  assertMatch(result.stdout, /^Coco v\d+\.\d+\.\d+/);
+  assertMatch(result.stdout, /^Ardo v\d+\.\d+\.\d+/);
   assertEquals(result.exitCode, 0);
 });
 
 Deno.test("CLI contract: --help prints usage and exits 0", async () => {
   const result = await runCoco(["--help"]);
-  assertStringIncludes(result.stdout, "Coco");
+  assertStringIncludes(result.stdout, "Ardo");
+  assertStringIncludes(result.stdout, "Usage: ardo");
+  assertStringIncludes(result.stdout, "Legacy alias: coco");
   assertStringIncludes(result.stdout, "start");
   assertStringIncludes(result.stdout, "--version");
   assertEquals(result.exitCode, 0);
@@ -49,8 +51,14 @@ Deno.test("CLI contract: --help prints usage and exits 0", async () => {
 
 Deno.test("CLI contract: -h alias prints usage and exits 0", async () => {
   const result = await runCoco(["-h"]);
-  assertStringIncludes(result.stdout, "Coco");
+  assertStringIncludes(result.stdout, "Ardo");
   assertStringIncludes(result.stdout, "--version");
+  assertEquals(result.exitCode, 0);
+});
+
+Deno.test("CLI contract: legacy coco invocation prints deprecation warning", async () => {
+  const result = await runCoco(["--help"], { _: "/usr/local/bin/coco" });
+  assertStringIncludes(result.stderr, "'coco' is deprecated");
   assertEquals(result.exitCode, 0);
 });
 

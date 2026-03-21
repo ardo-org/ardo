@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import { findBinary } from "../../lib/process.ts";
+import { findFirstBinary } from "../../lib/process.ts";
 import { UnsupportedPlatformError } from "../autostart.ts";
 import type {
   ServiceInstallOptions,
@@ -12,7 +12,8 @@ import type { ServiceManager } from "./interfaces.ts";
 // Constants
 // ---------------------------------------------------------------------------
 
-const SERVICE_NAME = "coco.service";
+const SERVICE_NAME = "ardo.service";
+const LEGACY_SERVICE_NAME = "coco.service";
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -26,13 +27,17 @@ function unitPath(home: string): string {
   return join(home, ".config", "systemd", "user", SERVICE_NAME);
 }
 
+function legacyUnitPath(home: string): string {
+  return join(home, ".config", "systemd", "user", LEGACY_SERVICE_NAME);
+}
+
 function logPath(home: string): string {
   return join(home, ".coco", "coco.log");
 }
 
 function generateUnit(binaryPath: string, log: string): string {
   return `[Unit]
-Description=Coco Local AI Gateway
+Description=Ardo Local AI Gateway
 After=network.target
 
 [Service]
@@ -91,7 +96,12 @@ export class LinuxServiceManager implements ServiceManager {
       await Deno.stat(unitPath(this.#home));
       return true;
     } catch {
-      return false;
+      try {
+        await Deno.stat(legacyUnitPath(this.#home));
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 
@@ -119,17 +129,28 @@ export class LinuxServiceManager implements ServiceManager {
     const up = unitPath(home);
     const lp = logPath(home);
 
-    const cocoPath = await findBinary("coco");
-    if (!cocoPath) {
-      throw new Error("coco is not installed globally. Run: deno task install");
+    const ardoPath = await findFirstBinary(["ardo", "coco"]);
+    if (!ardoPath) {
+      if (opts.dryRun) {
+        const configContent = generateUnit("ardo", lp);
+        return {
+          installed: true,
+          binaryPath: "ardo",
+          configPath: up,
+          configContent,
+        };
+      }
+      throw new Error(
+        "Neither 'ardo' nor legacy 'coco' is installed globally. Run: deno task install",
+      );
     }
 
-    const configContent = generateUnit(cocoPath, lp);
+    const configContent = generateUnit(ardoPath, lp);
 
     if (opts.dryRun) {
       return {
         installed: true,
-        binaryPath: cocoPath,
+        binaryPath: ardoPath,
         configPath: up,
         configContent,
       };
@@ -145,7 +166,7 @@ export class LinuxServiceManager implements ServiceManager {
 
     return {
       installed: true,
-      binaryPath: cocoPath,
+      binaryPath: ardoPath,
       configPath: up,
       configContent,
     };
@@ -160,11 +181,19 @@ export class LinuxServiceManager implements ServiceManager {
 
     const home = opts.home ?? this.#home;
     const up = unitPath(home);
+    const legacy = legacyUnitPath(home);
+
+    let targetUnit = up;
 
     try {
       await Deno.stat(up);
     } catch {
-      return { removed: false };
+      try {
+        await Deno.stat(legacy);
+        targetUnit = legacy;
+      } catch {
+        return { removed: false };
+      }
     }
 
     if (opts.dryRun) return { removed: true };
@@ -175,7 +204,7 @@ export class LinuxServiceManager implements ServiceManager {
     );
 
     try {
-      await Deno.remove(up);
+      await Deno.remove(targetUnit);
     } catch {
       // ignore if already gone
     }

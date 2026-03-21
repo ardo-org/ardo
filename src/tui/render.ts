@@ -1,12 +1,12 @@
 /**
- * TUI renderer for Coco.
+ * TUI renderer for Ardo.
  *
  * Uses @cliffy/ansi for ANSI escape sequences and cursor control.
  * Performs a full redraw on every state change to avoid cursor arithmetic bugs.
  *
  * Layout:
  *
- *   Coco — Local AI Gateway
+ *   Ardo - Local AI Gateway
  *   ──────────────────────────────────────────────
  *   Status: Running on http://localhost:11434
  *   Copilot: Authenticated ✓
@@ -34,11 +34,11 @@ const DIVIDER = "─────────────────────
 
 // Pre-generated with figlet "Slant" font
 const LOGO = [
-  "   ______               ",
-  "  / ____/___  _________ ",
-  " / /   / __ \\/ ___/ __ \\",
-  "/ /___/ /_/ / /__/ /_/ /",
-  "\\____/\\____/\\___/\\____/ ",
+  "    ___             __      ",
+  "   /   |  _________/ /___   ",
+  "  / /| | / ___/ __  / __ \\  ",
+  " / ___ |/ /  / /_/ / /_/ /  ",
+  "/_/  |_/_/   \\__,_/\\____/   ",
 ].join("\n");
 
 // ---------------------------------------------------------------------------
@@ -158,6 +158,7 @@ export function renderFull(state: TUIState): void {
 
   const lines: string[] = [
     colors.bold.cyan(LOGO),
+    colors.bold("Ardo - Local AI Gateway"),
     DIVIDER,
     statusLine,
     authLine,

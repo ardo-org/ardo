@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import { findBinary } from "../../lib/process.ts";
+import { findFirstBinary } from "../../lib/process.ts";
 import type {
   ServiceInstallOptions,
   ServiceInstallResult,
@@ -11,7 +11,8 @@ import type { ServiceManager } from "./interfaces.ts";
 // Constants
 // ---------------------------------------------------------------------------
 
-const PLIST_LABEL = "com.coco";
+const PLIST_LABEL = "com.ardo";
+const LEGACY_PLIST_LABEL = "com.coco";
 
 // ---------------------------------------------------------------------------
 // Private helpers
@@ -22,6 +23,10 @@ function homeDir(override?: string): string {
 }
 
 function plistPath(home: string): string {
+  return join(home, "Library", "LaunchAgents", "com.ardo.plist");
+}
+
+function legacyPlistPath(home: string): string {
   return join(home, "Library", "LaunchAgents", "com.coco.plist");
 }
 
@@ -98,7 +103,12 @@ export class MacOSServiceManager implements ServiceManager {
       await Deno.stat(plistPath(this.#home));
       return true;
     } catch {
-      return false;
+      try {
+        await Deno.stat(legacyPlistPath(this.#home));
+        return true;
+      } catch {
+        return false;
+      }
     }
   }
 
@@ -123,17 +133,28 @@ export class MacOSServiceManager implements ServiceManager {
     const pp = plistPath(home);
     const lp = logPath(home);
 
-    const cocoPath = await findBinary("coco");
-    if (!cocoPath) {
-      throw new Error("coco is not installed globally. Run: deno task install");
+    const ardoPath = await findFirstBinary(["ardo", "coco"]);
+    if (!ardoPath) {
+      if (opts.dryRun) {
+        const configContent = generatePlist("ardo", lp);
+        return {
+          installed: true,
+          binaryPath: "ardo",
+          configPath: pp,
+          configContent,
+        };
+      }
+      throw new Error(
+        "Neither 'ardo' nor legacy 'coco' is installed globally. Run: deno task install",
+      );
     }
 
-    const configContent = generatePlist(cocoPath, lp);
+    const configContent = generatePlist(ardoPath, lp);
 
     if (opts.dryRun) {
       return {
         installed: true,
-        binaryPath: cocoPath,
+        binaryPath: ardoPath,
         configPath: pp,
         configContent,
       };
@@ -152,7 +173,7 @@ export class MacOSServiceManager implements ServiceManager {
 
     return {
       installed: true,
-      binaryPath: cocoPath,
+      binaryPath: ardoPath,
       configPath: pp,
       configContent,
     };
@@ -163,22 +184,30 @@ export class MacOSServiceManager implements ServiceManager {
   ): Promise<ServiceUninstallResult> {
     const home = opts.home ?? this.#home;
     const pp = plistPath(home);
+    const legacy = legacyPlistPath(home);
+
+    let targetPath = pp;
 
     try {
       await Deno.stat(pp);
     } catch {
-      return { removed: false };
+      try {
+        await Deno.stat(legacy);
+        targetPath = legacy;
+      } catch {
+        return { removed: false };
+      }
     }
 
     if (opts.dryRun) return { removed: true };
 
     const uid = await resolveUID();
-    await runCommand(["launchctl", "bootout", `gui/${uid}`, pp], {
+    await runCommand(["launchctl", "bootout", `gui/${uid}`, targetPath], {
       ignoreFailure: true,
     });
 
     try {
-      await Deno.remove(pp);
+      await Deno.remove(targetPath);
     } catch {
       // ignore if already gone
     }

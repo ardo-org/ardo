@@ -14,7 +14,7 @@ export interface ServiceInstallOptions {
 export interface ServiceInstallResult {
   /** true = newly installed; false = already was installed */
   installed: boolean;
-  /** Absolute path of the coco binary embedded in the service file */
+  /** Absolute path of the ardo binary embedded in the service file */
   binaryPath: string;
   /** Path to the plist / systemd unit file written to disk */
   configPath: string;
@@ -31,7 +31,7 @@ export class UnsupportedPlatformError extends Error {
   constructor(platform: string) {
     super(
       `Autostart service support for ${platform} is coming soon. ` +
-        `Run 'coco start' manually after each login.`,
+        `Run 'ardo start' manually after each login.`,
     );
     this.name = "UnsupportedPlatformError";
   }

@@ -15,7 +15,7 @@ export interface ServiceState {
  * 1. Checking whether the OS service is installed
  * 2. If installed — checking service running state via OS manager
  * 3. If not installed — reading the PID file and checking liveness + /health
- * 4. Reading CocoConfig for the port
+ * 4. Reading Ardo config for the port
  * 5. Checking stored token validity
  */
 export async function getServiceState(): Promise<ServiceState> {
@@ -43,7 +43,7 @@ export async function getServiceState(): Promise<ServiceState> {
     return { running, serviceInstalled, pid: null, port, authStatus };
   }
 
-  // Coco-managed daemon: check PID + /health
+  // Ardo-managed daemon: check PID + /health
   const running = pid !== null;
 
   // If running, confirm reachability via /health (best-effort)
@@ -74,8 +74,8 @@ export async function getServiceState(): Promise<ServiceState> {
 }
 
 /**
- * Format a ServiceState for human-readable `coco status` output.
- * agents: list of configured agent names from CocoConfig.agents
+ * Format a ServiceState for human-readable `ardo status` output.
+ * agents: list of configured agent names from Ardo config entries
  */
 export function formatStatus(state: ServiceState, agents: string[]): string {
   const serviceLine = state.serviceInstalled
