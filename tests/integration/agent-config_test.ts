@@ -3,7 +3,7 @@
  *
  * These tests use temp directories to avoid touching real config files.
  * The validateConfig() probe tests require a running daemon and are marked
- * ignore: true — enable them with `coco start` before running manually.
+ * ignore: true -- enable them with `ardo start` before running manually.
  */
 
 import { assertEquals, assertStringIncludes } from "@std/assert";
@@ -59,7 +59,7 @@ Deno.test("configureAgent(codex) — creates config file when none exists", asyn
     assertStringIncludes(content, "model_provider");
     assertStringIncludes(content, "base_url");
     assertStringIncludes(content, "http://127.0.0.1:11434");
-    assertStringIncludes(content, "coco");
+    assertStringIncludes(content, "ardo");
     assertStringIncludes(content, 'wire_api = "responses"');
     assertStringIncludes(content, 'model = "gpt-5.4"');
     assertEquals(content.includes("auth_method"), false);
@@ -79,7 +79,7 @@ Deno.test("configureAgent(codex) — backs up existing file before overwriting",
       skipValidation: true,
     });
 
-    assertEquals(entry.backupPath, `${existingPath}.coco-backup`);
+    assertEquals(entry.backupPath, `${existingPath}.ardo-backup`);
     const backup = await Deno.readTextFile(entry.backupPath!);
     assertStringIncludes(backup, "gpt-4o");
 
@@ -181,7 +181,7 @@ Deno.test("configureAgent(claude-code) — merges only ANTHROPIC keys, preserves
     assertEquals(content.theme, "dark");
     assertEquals(content.env.OTHER_KEY, "preserve-me");
     assertEquals(content.env.ANTHROPIC_BASE_URL, "http://127.0.0.1:11434");
-    assertEquals(content.env.ANTHROPIC_AUTH_TOKEN, "coco");
+    assertEquals(content.env.ANTHROPIC_AUTH_TOKEN, "ardo");
   });
 });
 
@@ -206,7 +206,7 @@ Deno.test("configureAgent(cline) — writes globalState with openai provider fie
 
     const secretsPath = `${homeDir}/.cline/data/secrets.json`;
     const secrets = JSON.parse(await Deno.readTextFile(secretsPath));
-    assertEquals(secrets.openAiApiKey, "coco");
+    assertEquals(secrets.openAiApiKey, "ardo");
   });
 });
 
@@ -262,7 +262,7 @@ Deno.test("verifyAgentConfig returns false when config file no longer contains e
       homeDir,
       skipValidation: true,
     });
-    // Overwrite with content that doesn't include the coco endpoint
+    // Overwrite with content that doesn't include the ardo endpoint
     await Deno.writeTextFile(entry.configPath, 'model = "gpt-4o"\n');
     assertEquals(await verifyAgentConfig(entry), false);
   });

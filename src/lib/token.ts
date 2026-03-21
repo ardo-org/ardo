@@ -13,7 +13,7 @@ export interface TokenStore {
 }
 
 // ---------------------------------------------------------------------------
-// Factory — selects the most secure store available for the current platform
+// Factory -- selects the most secure store available for the current platform
 // ---------------------------------------------------------------------------
 
 /**
@@ -30,20 +30,30 @@ export function createTokenStore(): TokenStore {
   if (Deno.build.os === "windows") {
     return new WindowsCredentialStore();
   }
-  // Linux / other — try Secret Service; fall back to locked file
-  return new SecretServiceStore(new FileTokenStore(getDataDir()));
+  // Linux / other -- try Secret Service; fall back to locked file
+  return new SecretServiceStore(
+    new FileTokenStore(getDataDir(), getLegacyDataDir()),
+  );
 }
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-function getDataDir(): string {
-  const home = Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || ".";
-  return `${home}/.claudio`;
+function homeDir(): string {
+  return Deno.env.get("HOME") || Deno.env.get("USERPROFILE") || ".";
 }
 
-const KEYCHAIN_SERVICE = "claudio";
+function getDataDir(): string {
+  return `${homeDir()}/.ardo`;
+}
+
+function getLegacyDataDir(): string {
+  return `${homeDir()}/.claudio`;
+}
+
+const KEYCHAIN_SERVICE = "ardo";
+const LEGACY_KEYCHAIN_SERVICE = "claudio";
 const KEYCHAIN_ACCOUNT = "copilot";
 
 function parseToken(raw: string): AuthToken | null {
@@ -55,7 +65,7 @@ function parseToken(raw: string): AuthToken | null {
 }
 
 // ---------------------------------------------------------------------------
-// macOS Keychain  (security CLI — ships with every macOS install)
+// macOS Keychain  (security CLI -- ships with every macOS install)
 // ---------------------------------------------------------------------------
 
 class MacOSKeychainStore implements TokenStore {
@@ -83,11 +93,36 @@ class MacOSKeychainStore implements TokenStore {
   }
 
   async load(): Promise<AuthToken | null> {
+    const canonical = await this.loadForService(KEYCHAIN_SERVICE);
+    if (canonical) return canonical;
+    return this.loadForService(LEGACY_KEYCHAIN_SERVICE);
+  }
+
+  async clear(): Promise<void> {
+    for (const service of [KEYCHAIN_SERVICE, LEGACY_KEYCHAIN_SERVICE]) {
+      await new Deno.Command("security", {
+        args: [
+          "delete-generic-password",
+          "-s",
+          service,
+          "-a",
+          KEYCHAIN_ACCOUNT,
+        ],
+        stderr: "piped",
+      }).output().catch(() => {});
+    }
+  }
+
+  isValid(token: AuthToken | null): boolean {
+    return !!token && token.expiresAt > Date.now();
+  }
+
+  private async loadForService(service: string): Promise<AuthToken | null> {
     const { success, stdout } = await new Deno.Command("security", {
       args: [
         "find-generic-password",
         "-s",
-        KEYCHAIN_SERVICE,
+        service,
         "-a",
         KEYCHAIN_ACCOUNT,
         "-w",
@@ -99,49 +134,65 @@ class MacOSKeychainStore implements TokenStore {
     if (!success) return null;
     return parseToken(new TextDecoder().decode(stdout));
   }
-
-  async clear(): Promise<void> {
-    await new Deno.Command("security", {
-      args: [
-        "delete-generic-password",
-        "-s",
-        KEYCHAIN_SERVICE,
-        "-a",
-        KEYCHAIN_ACCOUNT,
-      ],
-      stderr: "piped",
-    }).output().catch(() => {});
-  }
-
-  isValid(token: AuthToken | null): boolean {
-    return !!token && token.expiresAt > Date.now();
-  }
 }
 
 // ---------------------------------------------------------------------------
-// Windows Credential Manager  (PowerShell — ships with every Windows install)
+// Windows Credential Manager  (PowerShell -- ships with every Windows install)
 // ---------------------------------------------------------------------------
+
+function winCredentialPath(service: string): string {
+  return `$env:APPDATA\\${service}\\token.xml`;
+}
 
 const WIN_TARGET = `${KEYCHAIN_SERVICE}/${KEYCHAIN_ACCOUNT}`;
 
 class WindowsCredentialStore implements TokenStore {
   async save(token: AuthToken): Promise<void> {
     const value = JSON.stringify(token);
-    // Store via .NET CredentialManager through PowerShell
     const script = `
       Add-Type -AssemblyName System.Security
       $pass = ConvertTo-SecureString '${
       value.replace(/'/g, "''")
     }' -AsPlainText -Force
       $cred = New-Object System.Management.Automation.PSCredential('${WIN_TARGET}', $pass)
-      $cred | Export-Clixml -Path "$env:APPDATA\\claudio\\token.xml" -Force
+      New-Item -ItemType Directory -Path "$env:APPDATA\\${KEYCHAIN_SERVICE}" -Force | Out-Null
+      $cred | Export-Clixml -Path "${
+      winCredentialPath(KEYCHAIN_SERVICE)
+    }" -Force
     `;
     await this.runPS(script);
   }
 
   async load(): Promise<AuthToken | null> {
+    const canonical = await this.loadFromPath(
+      winCredentialPath(KEYCHAIN_SERVICE),
+    );
+    if (canonical) return canonical;
+    return this.loadFromPath(winCredentialPath(LEGACY_KEYCHAIN_SERVICE));
+  }
+
+  async clear(): Promise<void> {
+    for (
+      const pathLiteral of [
+        winCredentialPath(KEYCHAIN_SERVICE),
+        winCredentialPath(LEGACY_KEYCHAIN_SERVICE),
+      ]
+    ) {
+      const script = `
+        $path = "${pathLiteral}"
+        if (Test-Path $path) { Remove-Item $path -Force }
+      `;
+      await this.runPS(script).catch(() => {});
+    }
+  }
+
+  isValid(token: AuthToken | null): boolean {
+    return !!token && token.expiresAt > Date.now();
+  }
+
+  private async loadFromPath(pathLiteral: string): Promise<AuthToken | null> {
     const script = `
-      $path = "$env:APPDATA\\claudio\\token.xml"
+      $path = "${pathLiteral}"
       if (!(Test-Path $path)) { exit 1 }
       $cred = Import-Clixml -Path $path
       $cred.GetNetworkCredential().Password
@@ -149,18 +200,6 @@ class WindowsCredentialStore implements TokenStore {
     const raw = await this.runPS(script);
     if (!raw) return null;
     return parseToken(raw);
-  }
-
-  async clear(): Promise<void> {
-    const script = `
-      $path = "$env:APPDATA\\claudio\\token.xml"
-      if (Test-Path $path) { Remove-Item $path -Force }
-    `;
-    await this.runPS(script).catch(() => {});
-  }
-
-  isValid(token: AuthToken | null): boolean {
-    return !!token && token.expiresAt > Date.now();
   }
 
   private async runPS(script: string): Promise<string> {
@@ -176,7 +215,7 @@ class WindowsCredentialStore implements TokenStore {
 }
 
 // ---------------------------------------------------------------------------
-// Linux Secret Service  (secret-tool — part of libsecret)
+// Linux Secret Service  (secret-tool -- part of libsecret)
 // ---------------------------------------------------------------------------
 
 /**
@@ -196,7 +235,7 @@ class SecretServiceStore implements TokenStore {
     const child = new Deno.Command("secret-tool", {
       args: [
         "store",
-        "--label=Claudio Copilot Token",
+        "--label=Ardo Copilot Token",
         "service",
         KEYCHAIN_SERVICE,
         "account",
@@ -222,38 +261,29 @@ class SecretServiceStore implements TokenStore {
       return this.fallback.load();
     }
 
-    const { success, stdout } = await new Deno.Command("secret-tool", {
-      args: [
-        "lookup",
-        "service",
-        KEYCHAIN_SERVICE,
-        "account",
-        KEYCHAIN_ACCOUNT,
-      ],
-      stdout: "piped",
-      stderr: "piped",
-    }).output();
+    const canonical = await this.loadForService(KEYCHAIN_SERVICE);
+    if (canonical) return canonical;
 
-    if (!success) return this.fallback.load();
+    const legacy = await this.loadForService(LEGACY_KEYCHAIN_SERVICE);
+    if (legacy) return legacy;
 
-    const raw = new TextDecoder().decode(stdout).trim();
-    if (!raw) return this.fallback.load();
-
-    return parseToken(raw);
+    return this.fallback.load();
   }
 
   async clear(): Promise<void> {
     if (await this.isAvailable()) {
-      await new Deno.Command("secret-tool", {
-        args: [
-          "clear",
-          "service",
-          KEYCHAIN_SERVICE,
-          "account",
-          KEYCHAIN_ACCOUNT,
-        ],
-        stderr: "piped",
-      }).output().catch(() => {});
+      for (const service of [KEYCHAIN_SERVICE, LEGACY_KEYCHAIN_SERVICE]) {
+        await new Deno.Command("secret-tool", {
+          args: [
+            "clear",
+            "service",
+            service,
+            "account",
+            KEYCHAIN_ACCOUNT,
+          ],
+          stderr: "piped",
+        }).output().catch(() => {});
+      }
     }
     await this.fallback.clear();
   }
@@ -274,6 +304,27 @@ class SecretServiceStore implements TokenStore {
       return false;
     }
   }
+
+  private async loadForService(service: string): Promise<AuthToken | null> {
+    const { success, stdout } = await new Deno.Command("secret-tool", {
+      args: [
+        "lookup",
+        "service",
+        service,
+        "account",
+        KEYCHAIN_ACCOUNT,
+      ],
+      stdout: "piped",
+      stderr: "piped",
+    }).output();
+
+    if (!success) return null;
+
+    const raw = new TextDecoder().decode(stdout).trim();
+    if (!raw) return null;
+
+    return parseToken(raw);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -282,9 +333,11 @@ class SecretServiceStore implements TokenStore {
 
 export class FileTokenStore implements TokenStore {
   private readonly path: string;
+  private readonly legacyPath: string | null;
 
-  constructor(private readonly dir: string) {
+  constructor(private readonly dir: string, legacyDir?: string) {
     this.path = `${this.dir}/tokens.json`;
+    this.legacyPath = legacyDir ? `${legacyDir}/tokens.json` : null;
   }
 
   async save(token: AuthToken): Promise<void> {
@@ -306,14 +359,18 @@ export class FileTokenStore implements TokenStore {
   }
 
   async clear(): Promise<void> {
-    try {
-      const data = await this.readAll();
-      delete data[KEYCHAIN_ACCOUNT];
-      await Deno.writeTextFile(this.path, JSON.stringify(data, null, 2), {
-        mode: 0o600,
-      });
-    } catch {
-      // Ignore errors on clear
+    for (const path of [this.path, this.legacyPath]) {
+      if (!path) continue;
+      try {
+        const raw = await Deno.readTextFile(path);
+        const parsed = JSON.parse(raw) as Record<string, AuthToken>;
+        delete parsed[KEYCHAIN_ACCOUNT];
+        await Deno.writeTextFile(path, JSON.stringify(parsed, null, 2), {
+          mode: 0o600,
+        });
+      } catch {
+        // Ignore errors on clear
+      }
     }
   }
 
@@ -325,7 +382,12 @@ export class FileTokenStore implements TokenStore {
     try {
       return JSON.parse(await Deno.readTextFile(this.path));
     } catch {
-      return {};
+      if (!this.legacyPath) return {};
+      try {
+        return JSON.parse(await Deno.readTextFile(this.legacyPath));
+      } catch {
+        return {};
+      }
     }
   }
 }

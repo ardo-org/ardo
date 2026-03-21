@@ -39,7 +39,8 @@ const TOKEN_ENDPOINT_V1 = "https://api.github.com/copilot_internal/token";
 
 function debugEnabled(): boolean {
   try {
-    return Deno.env.get("DEBUG_CLAUDIO") === "1";
+    return Deno.env.get("DEBUG_ARDO") === "1" ||
+      Deno.env.get("DEBUG_CLAUDIO") === "1";
   } catch {
     return false;
   }
@@ -50,7 +51,7 @@ async function fetchTokenEndpoint(
   githubToken: string,
 ): Promise<Response> {
   if (debugEnabled()) {
-    console.error(`[claudio] Token exchange attempt: ${endpoint}`);
+    console.error(`[ardo] Token exchange attempt: ${endpoint}`);
   }
 
   const response = await fetch(endpoint, {
@@ -69,7 +70,7 @@ async function fetchTokenEndpoint(
 
   if (debugEnabled()) {
     console.error(
-      `[claudio] Token exchange response: ${endpoint} -> HTTP ${response.status}`,
+      `[ardo] Token exchange response: ${endpoint} -> HTTP ${response.status}`,
     );
   }
 
@@ -89,7 +90,7 @@ export async function exchangeToken(
   if (response.status === 404) {
     await response.body?.cancel();
     if (debugEnabled()) {
-      console.error("[claudio] Falling back to v1 Copilot token endpoint");
+      console.error("[ardo] Falling back to v1 Copilot token endpoint");
     }
     response = await fetchTokenEndpoint(TOKEN_ENDPOINT_V1, githubToken);
   }

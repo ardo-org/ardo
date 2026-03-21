@@ -9,7 +9,7 @@ tool that speaks either API protocol can be wired through Ardo in seconds.
 
 Website: https://ardo-org.github.io/ardo/
 
-Migration guide: [MIGRATION.md](MIGRATION.md)  
+Migration guide: [MIGRATION.md](MIGRATION.md)
 Release notes: [CHANGELOG.md](CHANGELOG.md)
 
 ## Features

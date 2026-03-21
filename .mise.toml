@@ -1,10 +1,9 @@
 [tools]
-# claudio = "0.1.0"
+# ardo is installed via GitHub Releases binary
 
 [settings]
-# claudio is installed via GitHub Releases binary
-# See: https://github.com/myty/claudio/releases
+# See: https://github.com/ardo-org/ardo/releases
 
 [tasks.install]
-description = "Install coco globally via deno"
-run = "deno install --global --allow-all -n coco --config deno.json --force src/cli/main.ts"
+description = "Install ardo globally via deno"
+run = "deno install --global --allow-all -n ardo --config deno.json --force src/cli/main.ts"

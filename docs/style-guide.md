@@ -1,8 +1,8 @@
 # Documentation Style Guide
 
-**Purpose**: Maintain consistency across all documentation in the Claudio
-project **Scope**: README.md, AGENTS.md, constitution.md, and supporting
-documentation **Last Updated**: 2026-03-08
+**Purpose**: Maintain consistency across all documentation in the Ardo project
+**Scope**: README.md, AGENTS.md, constitution.md, and supporting documentation
+**Last Updated**: 2026-03-20
 
 ## Content Guidelines
 
@@ -11,13 +11,13 @@ documentation **Last Updated**: 2026-03-08
 - **Professional and approachable** - Technical but accessible
 - **Helpful and encouraging** - Assume good intent, provide clear guidance
 - **Concise and actionable** - Get to the point, provide specific steps
-- **Consistent with Claudio's calm UX principles** - No excitement or hyperbole
+- **Consistent with Ardo's calm UX principles** - No excitement or hyperbole
 
 ### Writing Style
 
 - **Second person** - Use "you" for instructions and guidance
 - **Present tense** - Describe current capabilities and state
-- **Active voice** - "Claudio validates" not "validation is performed"
+- **Active voice** - "Ardo validates" not "validation is performed"
 - **Parallel structure** - Consistent formatting in lists and steps
 
 ## Formatting Standards
@@ -36,7 +36,7 @@ documentation **Last Updated**: 2026-03-08
 
 ### Code Examples
 
-- Always use syntax highlighting: `typescript,`bash, ```json
+- Always use syntax highlighting: `TypeScript`, `bash`, `json`
 - Include complete, working examples
 - Add brief comments for complex code
 - Test all command examples before documenting
@@ -50,7 +50,7 @@ documentation **Last Updated**: 2026-03-08
 
 ### Links and References
 
-- Use descriptive link text: `[GitHub Releases](url)` not `[here](url)`
+- Use descriptive link text: `[GitHub Releases](https://github.com/ardo-org/ardo/releases)`
 - Prefer relative links for internal documents
 - Always test external links
 - Include protocol for external URLs: `https://example.com`
@@ -61,14 +61,12 @@ documentation **Last Updated**: 2026-03-08
 
 Use these exact spellings and capitalizations:
 
-| Correct     | Incorrect                       |
-| ----------- | ------------------------------- |
-| GitHub      | github, Github                  |
-| TypeScript  | typescript, Typescript          |
-| Deno        | deno (except in commands)       |
-| Claude Code | claude code, Claude code        |
-| API         | api, Api                        |
-| CLI         | cli (except in directory names) |
+- GitHub
+- TypeScript
+- Deno
+- Claude Code
+- API
+- CLI
 
 ### Technical Terminology
 
@@ -114,7 +112,7 @@ Use contextually appropriate emojis in progressive disclosure summaries:
 ### README.md
 
 - **Purpose**: User onboarding and project overview
-- **Target audience**: End users discovering and installing Claudio
+- **Target audience**: End users discovering and installing Ardo
 - **Reading time target**: 5-10 minutes
 - **Structure**: Title → Features → Installation → Usage → Development
 - **Progressive disclosure**: Use for advanced config, troubleshooting

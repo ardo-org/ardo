@@ -105,7 +105,7 @@ export async function pollForToken(
 
     if (data.error === "expired_token") {
       throw new Error(
-        "Device flow expired. Please run claudio again to re-authenticate.",
+        "Device flow expired. Please run ardo again to re-authenticate.",
       );
     }
 
@@ -113,6 +113,6 @@ export async function pollForToken(
   }
 
   throw new Error(
-    "Device flow timed out. Please run claudio again to re-authenticate.",
+    "Device flow timed out. Please run ardo again to re-authenticate.",
   );
 }

@@ -1,5 +1,5 @@
 ---
-status: planned
+status: complete
 created: 2026-03-21
 priority: critical
 tags:
@@ -10,8 +10,13 @@ tags:
 - migration
 - release
 created_at: 2026-03-21T02:07:34.078975Z
-updated_at: 2026-03-21T02:07:34.078975Z
+updated_at: 2026-03-21T02:40:00.822767Z
+completed_at: 2026-03-21T02:40:00.822767Z
+transitions:
+- status: complete
+  at: 2026-03-21T02:40:00.822767Z
 ---
+
 # Project Rename: Coco to Ardo
 
 ## Overview
@@ -28,29 +33,29 @@ The project has moved to a new brand and organizational identity. Keeping mixed 
 
 ## Requirements
 
-- [ ] **R-001 Name Canonicalization**: Replace all first-party references to `Coco`/`coco` with `Ardo`/`ardo` across source, docs, scripts, and metadata except where historical context is explicitly required.
-- [ ] **R-002 CLI Primary Command**: CLI entrypoint command must be `ardo` and all help text, examples, and diagnostics must show `ardo` as canonical.
-- [ ] **R-003 Backward Compatibility Alias**: Provide optional compatibility path for `coco` command invocation that delegates to `ardo` with a clear deprecation warning and sunset timeline.
-- [ ] **R-004 Binary and Service Identity**: Update binary names, daemon/service labels, process names, and runtime identifiers to `ardo`.
-- [ ] **R-005 Internal Identifiers**: Rename relevant package/module symbols, constants, and generated identifiers that encode the old name when safe to do so.
-- [ ] **R-006 GitHub Organization References**: Replace GitHub organization references with `ardo-org` in all docs, workflows, URLs, and badges.
-- [ ] **R-007 Repository and URL Integrity**: Update repository name references, clone/install links, badges, social links, and docs cross-links; verify no broken URLs remain.
-- [ ] **R-008 GitHub Templates and Automation**: Update issue templates, PR templates, and CI/workflow text or logic that references `Coco`.
-- [ ] **R-009 Documentation Rename Completion**: Update all project docs (README, docs/, specs references where appropriate) to use Ardo terminology and accurate examples.
-- [ ] **R-010 Conceptual and Diagram Alignment**: Update architecture diagrams and conceptual explanations to reflect Ardo naming and current org/repo context.
-- [ ] **R-011 CLI and Config Examples**: Update all installation and usage examples from `coco` to `ardo`, including command snippets and sample outputs.
-- [ ] **R-012 Config Directory Migration**: Default config/state path must move from `~/.coco` to `~/.ardo`.
-- [ ] **R-013 Config Fallback and Migration**: Implement fallback resolution and/or one-time migration logic for existing `~/.coco` data with non-destructive behavior.
-- [ ] **R-014 Environment Variable Migration**: Introduce `ARDO_*` environment variables as canonical and provide compatibility behavior for existing `COCO_*` variables during transition.
-- [ ] **R-015 Warning and Telemetry Messaging**: Where old command/env/config paths are used, emit concise migration guidance in warnings/logs without hard-failing existing flows during compatibility window.
-- [ ] **R-016 Branding Assets**: Replace logos, icons, naming marks, and visible brand strings with Ardo assets.
-- [ ] **R-017 Visual System Update**: Update brand palette, typography references, and social preview metadata used by website/repository assets.
-- [ ] **R-018 Distribution Identity**: Update package/distribution names and install metadata where required (npm package scope/name, binary artifact names, installers, checksums, release notes).
-- [ ] **R-019 Legacy Package Handling**: For old package names/channels, provide deprecation notices, redirects, or compatibility stubs where ecosystem constraints allow.
-- [ ] **R-020 Changelog Entry**: Add a changelog entry documenting rename scope, compatibility behavior, and migration deadlines.
-- [ ] **R-021 Migration Guide**: Add `MIGRATION.md` at repository root with rationale, before/after mapping, CLI/config/env updates, and explicit upgrade steps.
-- [ ] **R-022 Build and Runtime Safety**: Project must build, install, and run under Ardo naming without functional regression.
-- [ ] **R-023 Link and Command Validation**: Validate docs commands and external links after rename; no stale `coco` commands/URLs in active docs except in migration-history sections.
+- [x] **R-001 Name Canonicalization**: Replace all first-party references to `Coco`/`coco` with `Ardo`/`ardo` across source, docs, scripts, and metadata except where historical context is explicitly required.
+- [x] **R-002 CLI Primary Command**: CLI entrypoint command must be `ardo` and all help text, examples, and diagnostics must show `ardo` as canonical.
+- [x] **R-003 Backward Compatibility Alias**: Provide optional compatibility path for `coco` command invocation that delegates to `ardo` with a clear deprecation warning and sunset timeline.
+- [x] **R-004 Binary and Service Identity**: Update binary names, daemon/service labels, process names, and runtime identifiers to `ardo`.
+- [x] **R-005 Internal Identifiers**: Rename relevant package/module symbols, constants, and generated identifiers that encode the old name when safe to do so.
+- [x] **R-006 GitHub Organization References**: Replace GitHub organization references with `ardo-org` in all docs, workflows, URLs, and badges.
+- [x] **R-007 Repository and URL Integrity**: Update repository name references, clone/install links, badges, social links, and docs cross-links; verify no broken URLs remain.
+- [x] **R-008 GitHub Templates and Automation**: Update issue templates, PR templates, and CI/workflow text or logic that references `Coco`.
+- [x] **R-009 Documentation Rename Completion**: Update all project docs (README, docs/, specs references where appropriate) to use Ardo terminology and accurate examples.
+- [x] **R-010 Conceptual and Diagram Alignment**: Update architecture diagrams and conceptual explanations to reflect Ardo naming and current org/repo context.
+- [x] **R-011 CLI and Config Examples**: Update all installation and usage examples from `coco` to `ardo`, including command snippets and sample outputs.
+- [x] **R-012 Config Directory Migration**: Default config/state path must move from `~/.coco` to `~/.ardo`.
+- [x] **R-013 Config Fallback and Migration**: Implement fallback resolution and/or one-time migration logic for existing `~/.coco` data with non-destructive behavior.
+- [x] **R-014 Environment Variable Migration**: Introduce `ARDO_*` environment variables as canonical and provide compatibility behavior for existing `COCO_*` variables during transition.
+- [x] **R-015 Warning and Telemetry Messaging**: Where old command/env/config paths are used, emit concise migration guidance in warnings/logs without hard-failing existing flows during compatibility window.
+- [x] **R-016 Branding Assets**: Replace logos, icons, naming marks, and visible brand strings with Ardo assets.
+- [x] **R-017 Visual System Update**: Update brand palette, typography references, and social preview metadata used by website/repository assets.
+- [x] **R-018 Distribution Identity**: Update package/distribution names and install metadata where required (npm package scope/name, binary artifact names, installers, checksums, release notes).
+- [x] **R-019 Legacy Package Handling**: For old package names/channels, provide deprecation notices, redirects, or compatibility stubs where ecosystem constraints allow.
+- [x] **R-020 Changelog Entry**: Add a changelog entry documenting rename scope, compatibility behavior, and migration deadlines.
+- [x] **R-021 Migration Guide**: Add `MIGRATION.md` at repository root with rationale, before/after mapping, CLI/config/env updates, and explicit upgrade steps.
+- [x] **R-022 Build and Runtime Safety**: Project must build, install, and run under Ardo naming without functional regression.
+- [x] **R-023 Link and Command Validation**: Validate docs commands and external links after rename; no stale `coco` commands/URLs in active docs except in migration-history sections.
 
 ## Non-Goals
 
@@ -97,16 +102,16 @@ Umbrella completion is gated on all child specs reaching `complete` with their t
 
 ## Acceptance Criteria
 
-- [ ] **AC-001** All active first-party references are Ardo-branded; any remaining `Coco` references are intentional and documented.
-- [ ] **AC-002** `ardo` command is primary and fully functional across all documented flows.
-- [ ] **AC-003** If alias is enabled, `coco` invocation works and prints migration/deprecation guidance.
-- [ ] **AC-004** Config resolution prefers `~/.ardo` and safely supports migration from `~/.coco`.
-- [ ] **AC-005** `ARDO_*` variables are documented and functional; compatibility for `COCO_*` is documented.
-- [ ] **AC-006** Repository/docs links, badges, and org references resolve correctly to `ardo-org` and renamed repo endpoints.
-- [ ] **AC-007** Brand assets and social previews reflect Ardo identity.
-- [ ] **AC-008** Distribution channels publish/install under Ardo identity or provide clear deprecation/redirect behavior for legacy channels.
-- [ ] **AC-009** `MIGRATION.md` exists, is linked from README/changelog, and contains working before/after examples.
-- [ ] **AC-010** CI/test/build and install verification pass after rename with no naming-related breakage.
+- [x] **AC-001** All active first-party references are Ardo-branded; any remaining `Coco` references are intentional and documented.
+- [x] **AC-002** `ardo` command is primary and fully functional across all documented flows.
+- [x] **AC-003** If alias is enabled, `coco` invocation works and prints migration/deprecation guidance.
+- [x] **AC-004** Config resolution prefers `~/.ardo` and safely supports migration from `~/.coco`.
+- [x] **AC-005** `ARDO_*` variables are documented and functional; compatibility for `COCO_*` is documented.
+- [x] **AC-006** Repository/docs links, badges, and org references resolve correctly to `ardo-org` and renamed repo endpoints.
+- [x] **AC-007** Brand assets and social previews reflect Ardo identity.
+- [x] **AC-008** Distribution channels publish/install under Ardo identity or provide clear deprecation/redirect behavior for legacy channels.
+- [x] **AC-009** `MIGRATION.md` exists, is linked from README/changelog, and contains working before/after examples.
+- [x] **AC-010** CI/test/build and install verification pass after rename with no naming-related breakage.
 
 ## Migration Notes
 
@@ -134,21 +139,21 @@ Umbrella completion is gated on all child specs reaching `complete` with their t
 
 ## Plan
 
-- [ ] Confirm all child specs are linked and scoped without overlap gaps.
-- [ ] Sequence child implementation where dependencies exist (e.g., CLI/config before migration docs finalization).
-- [ ] Track each child through implementation and test completion.
-- [ ] Reconcile cross-child naming inventory and resolve conflicts.
-- [ ] Run umbrella-level validation (global grep checks, full build/test, install smoke tests).
-- [ ] Mark umbrella complete only when all child acceptance criteria are satisfied.
+- [x] Confirm all child specs are linked and scoped without overlap gaps.
+- [x] Sequence child implementation where dependencies exist (e.g., CLI/config before migration docs finalization).
+- [x] Track each child through implementation and test completion.
+- [x] Reconcile cross-child naming inventory and resolve conflicts.
+- [x] Run umbrella-level validation (global grep checks, full build/test, install smoke tests).
+- [x] Mark umbrella complete only when all child acceptance criteria are satisfied.
 
 ## Test
 
-- [ ] Search-based verification shows no unintended `Coco`/`coco` references in active files.
-- [ ] CLI tests cover `ardo` command paths and compatibility alias behavior (if enabled).
-- [ ] Config migration tests verify first-run migration, fallback, and idempotency.
-- [ ] Env var tests verify `ARDO_*` precedence and `COCO_*` compatibility behavior.
-- [ ] Docs validation confirms command snippets and URLs are current and functional.
-- [ ] Release dry-run validates artifact names and package metadata.
+- [x] Search-based verification shows no unintended `Coco`/`coco` references in active files.
+- [x] CLI tests cover `ardo` command paths and compatibility alias behavior (if enabled).
+- [x] Config migration tests verify first-run migration, fallback, and idempotency.
+- [x] Env var tests verify `ARDO_*` precedence and `COCO_*` compatibility behavior.
+- [x] Docs validation confirms command snippets and URLs are current and functional.
+- [x] Release dry-run validates artifact names and package metadata.
 
 ## Notes
 

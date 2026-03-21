@@ -2,7 +2,7 @@
  * Per-agent configuration writers.
  *
  * Writes the endpoint configuration for each supported agent so it routes
- * API traffic through Coco's local proxy. Backs up original files and
+ * API traffic through Ardo's local proxy. Backs up original files and
  * supports reversible unconfigure.
  */
 
@@ -50,9 +50,9 @@ async function fileExists(path: string): Promise<boolean> {
   }
 }
 
-/** Backup a file to `<path>.coco-backup`. Returns the backup path. */
+/** Backup a file to `<path>.ardo-backup`. Returns the backup path. */
 async function backupFile(path: string): Promise<string> {
-  const backupPath = `${path}.coco-backup`;
+  const backupPath = `${path}.ardo-backup`;
   await Deno.copyFile(path, backupPath);
   return backupPath;
 }
@@ -115,7 +115,7 @@ async function writeClaudeCode(
     env: {
       ...existingEnv,
       ANTHROPIC_BASE_URL: `http://127.0.0.1:${port}`,
-      ANTHROPIC_AUTH_TOKEN: "coco",
+      ANTHROPIC_AUTH_TOKEN: "ardo",
     },
   };
 
@@ -140,7 +140,7 @@ async function writeCline(
     existing = JSON.parse(raw) as Record<string, unknown>;
   }
 
-  // Merge coco proxy settings into the flat globalState format used by the
+  // Merge ardo proxy settings into the flat globalState format used by the
   // official Cline CLI. Setting welcomeViewCompleted prevents the setup wizard.
   const updated = {
     ...existing,
@@ -166,7 +166,7 @@ async function writeCline(
     : {};
   await Deno.writeTextFile(
     secretsPath,
-    JSON.stringify({ ...existingSecrets, openAiApiKey: "coco" }, null, 2) +
+    JSON.stringify({ ...existingSecrets, openAiApiKey: "ardo" }, null, 2) +
       "\n",
   );
 
@@ -193,11 +193,11 @@ async function writeCodex(
     ...existing,
     // Use a Codex-native model to avoid local metadata fallback warnings.
     model: "gpt-5.4",
-    model_provider: "coco",
+    model_provider: "ardo",
     model_providers: {
       ...existingProviders,
-      coco: {
-        name: "Coco",
+      ardo: {
+        name: "Ardo",
         base_url: `http://127.0.0.1:${port}/v1/`,
         // Codex now requires Responses API wiring.
         wire_api: "responses",
@@ -208,7 +208,7 @@ async function writeCodex(
   await ensureDir(configPath);
   await Deno.writeTextFile(
     configPath,
-    "# Written by coco configure codex\n" + stringifyToml(updated),
+    "# Written by ardo configure codex\n" + stringifyToml(updated),
   );
   return { configPath, backupPath };
 }
@@ -233,7 +233,7 @@ const AGENT_WRITERS: Record<string, AgentWriter> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Perform a 1-token probe against the running Coco proxy to verify
+ * Perform a 1-token probe against the running Ardo proxy to verify
  * that an agent's config would work. Returns true if the probe succeeds.
  */
 export async function validateConfig(port: number): Promise<boolean> {
@@ -242,7 +242,7 @@ export async function validateConfig(port: number): Promise<boolean> {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: "Bearer coco",
+        Authorization: "Bearer ardo",
       },
       body: JSON.stringify({
         model: "gpt-4o",
@@ -262,9 +262,9 @@ export async function validateConfig(port: number): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 /**
- * Verify that an agent's config file still exists and contains the Coco
+ * Verify that an agent's config file still exists and contains the Ardo
  * endpoint. Returns false if the file is missing or was overwritten by
- * the agent (i.e., coco's settings are no longer present).
+ * the agent (i.e., ardo settings are no longer present).
  */
 export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
   try {
@@ -274,16 +274,21 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
     // point to /v1/responses and should be treated as stale.
     if (entry.agentName === "codex") {
       const parsed = parseToml(content) as Record<string, unknown>;
-      if (parsed.model_provider !== "coco") return false;
+      if (
+        parsed.model_provider !== "ardo" && parsed.model_provider !== "coco"
+      ) return false;
 
       const providers = parsed.model_providers as Record<string, unknown>;
       if (!providers || typeof providers !== "object") return false;
 
-      const coco = providers.coco as Record<string, unknown>;
-      if (!coco || typeof coco !== "object") return false;
+      const providerConfig = (providers.ardo ?? providers.coco) as Record<
+        string,
+        unknown
+      >;
+      if (!providerConfig || typeof providerConfig !== "object") return false;
 
-      const baseUrl = coco.base_url;
-      const wireApi = coco.wire_api;
+      const baseUrl = providerConfig.base_url;
+      const wireApi = providerConfig.wire_api;
       if (typeof baseUrl !== "string" || !baseUrl.includes(entry.endpoint)) {
         return false;
       }
@@ -301,14 +306,14 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 /**
- * Configure an agent to route through Coco's proxy.
+ * Configure an agent to route through Ardo's proxy.
  * Backs up any existing config, writes the agent-specific format, runs a
  * validation probe, and persists the ConfigEntry to CocoConfig.
  */
 export async function configureAgent(
   agentName: string,
   port: number,
-  cocoConfig: CocoConfig,
+  ardoConfig: CocoConfig,
   options?: ConfigureOptions,
 ): Promise<ConfigEntry> {
   const agent = getAgent(agentName);
@@ -340,23 +345,23 @@ export async function configureAgent(
   };
 
   // Replace any existing entry for this agent
-  const agents = cocoConfig.agents.filter((a) => a.agentName !== agentName);
+  const agents = ardoConfig.agents.filter((a) => a.agentName !== agentName);
   agents.push(entry);
-  await saveConfig({ ...cocoConfig, agents });
+  await saveConfig({ ...ardoConfig, agents });
 
   return entry;
 }
 
 /**
- * Revert an agent's configuration to its pre-Coco state.
+ * Revert an agent's configuration to its pre-Ardo state.
  * Restores backup if one exists, or deletes the written file.
  * Removes the ConfigEntry from CocoConfig.
  */
 export async function unconfigureAgent(
   agentName: string,
-  cocoConfig: CocoConfig,
+  ardoConfig: CocoConfig,
 ): Promise<void> {
-  const entry = cocoConfig.agents.find((a) => a.agentName === agentName);
+  const entry = ardoConfig.agents.find((a) => a.agentName === agentName);
   if (!entry) {
     return; // not configured — nothing to undo
   }
@@ -365,7 +370,7 @@ export async function unconfigureAgent(
     // Restore backup
     await Deno.rename(entry.backupPath, entry.configPath);
   } else {
-    // No prior file — delete the one Coco created
+    // No prior file -- delete the one Ardo created
     try {
       await Deno.remove(entry.configPath);
     } catch {
@@ -373,8 +378,8 @@ export async function unconfigureAgent(
     }
   }
 
-  const agents = cocoConfig.agents.filter((a) => a.agentName !== agentName);
-  await saveConfig({ ...cocoConfig, agents });
+  const agents = ardoConfig.agents.filter((a) => a.agentName !== agentName);
+  await saveConfig({ ...ardoConfig, agents });
 }
 
 /**
@@ -382,7 +387,7 @@ export async function unconfigureAgent(
  */
 export function isAgentConfigured(
   agentName: string,
-  cocoConfig: CocoConfig,
+  ardoConfig: CocoConfig,
 ): boolean {
-  return cocoConfig.agents.some((a) => a.agentName === agentName);
+  return ardoConfig.agents.some((a) => a.agentName === agentName);
 }
