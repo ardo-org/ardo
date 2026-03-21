@@ -45,7 +45,7 @@ Deno.test({
       assertStringIncludes(result.configContent, "RunAtLoad");
       assertStringIncludes(result.configContent, "KeepAlive");
       assertStringIncludes(result.configContent, "StandardOutPath");
-      assertStringIncludes(result.configContent, "coco.log");
+      assertStringIncludes(result.configContent, "ardo.log");
       assertEquals(result.installed, true);
     } catch (err) {
       // If coco binary not found, that is expected in CI without global install
@@ -134,7 +134,7 @@ Deno.test({
       assertStringIncludes(result.configContent, "--daemon");
       assertStringIncludes(result.configContent, "Restart=on-failure");
       assertStringIncludes(result.configContent, "WantedBy=default.target");
-      assertStringIncludes(result.configContent, "coco.log");
+      assertStringIncludes(result.configContent, "ardo.log");
       assertEquals(result.installed, true);
     } catch (err) {
       if (

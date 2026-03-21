@@ -36,11 +36,66 @@ Deno.test("loadConfig — returns DEFAULT_CONFIG on first run", async () => {
   });
 });
 
-Deno.test("loadConfig — creates ~/.coco dir if absent", async () => {
+Deno.test("loadConfig — creates ~/.ardo dir if absent", async () => {
   await withTempHome(async (home) => {
     await loadConfig();
-    const stat = await Deno.stat(join(home, ".coco"));
+    const stat = await Deno.stat(join(home, ".ardo"));
     assertEquals(stat.isDirectory, true);
+  });
+});
+
+Deno.test("loadConfig — migrates legacy ~/.coco/config.json to ~/.ardo", async () => {
+  await withTempHome(async (home) => {
+    const legacyDir = join(home, ".coco");
+    const canonicalDir = join(home, ".ardo");
+    await Deno.mkdir(legacyDir, { recursive: true });
+
+    const legacyConfig: CocoConfig = {
+      ...DEFAULT_CONFIG,
+      port: 12000,
+      logLevel: "debug",
+    };
+
+    await Deno.writeTextFile(
+      join(legacyDir, "config.json"),
+      JSON.stringify(legacyConfig, null, 2) + "\n",
+    );
+
+    const loaded = await loadConfig();
+    assertEquals(loaded.port, 12000);
+    assertEquals(loaded.logLevel, "debug");
+
+    const migratedRaw = await Deno.readTextFile(
+      join(canonicalDir, "config.json"),
+    );
+    const migrated = JSON.parse(migratedRaw) as CocoConfig;
+    assertEquals(migrated.port, 12000);
+    assertEquals(migrated.logLevel, "debug");
+  });
+});
+
+Deno.test("loadConfig — migration remains idempotent across repeated loads", async () => {
+  await withTempHome(async (home) => {
+    const legacyDir = join(home, ".coco");
+    const canonicalDir = join(home, ".ardo");
+    await Deno.mkdir(legacyDir, { recursive: true });
+
+    await Deno.writeTextFile(
+      join(legacyDir, "config.json"),
+      JSON.stringify({ ...DEFAULT_CONFIG, port: 14000 }, null, 2) + "\n",
+    );
+
+    const first = await loadConfig();
+    const second = await loadConfig();
+
+    assertEquals(first.port, 14000);
+    assertEquals(second.port, 14000);
+
+    const canonicalRaw = await Deno.readTextFile(
+      join(canonicalDir, "config.json"),
+    );
+    const canonical = JSON.parse(canonicalRaw) as CocoConfig;
+    assertEquals(canonical.port, 14000);
   });
 });
 
@@ -115,7 +170,7 @@ Deno.test("saveConfig — rejects invalid logLevel", async () => {
 
 Deno.test("loadConfig — throws on malformed JSON", async () => {
   await withTempHome(async (home) => {
-    const dir = join(home, ".coco");
+    const dir = join(home, ".ardo");
     await Deno.mkdir(dir, { recursive: true });
     await Deno.writeTextFile(join(dir, "config.json"), "{ bad json }");
     await assertRejects(
@@ -123,5 +178,43 @@ Deno.test("loadConfig — throws on malformed JSON", async () => {
       Error,
       "Failed to parse",
     );
+  });
+});
+
+Deno.test("loadConfig — ARDO_PORT overrides file/default", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("ARDO_PORT", "13000");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.port, 13000);
+    } finally {
+      Deno.env.delete("ARDO_PORT");
+    }
+  });
+});
+
+Deno.test("loadConfig — COCO_PORT is honored as legacy fallback", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("COCO_PORT", "13001");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.port, 13001);
+    } finally {
+      Deno.env.delete("COCO_PORT");
+    }
+  });
+});
+
+Deno.test("loadConfig — ARDO_PORT takes precedence over COCO_PORT", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("ARDO_PORT", "13002");
+    Deno.env.set("COCO_PORT", "13003");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.port, 13002);
+    } finally {
+      Deno.env.delete("ARDO_PORT");
+      Deno.env.delete("COCO_PORT");
+    }
   });
 });

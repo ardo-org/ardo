@@ -32,7 +32,7 @@ function legacyUnitPath(home: string): string {
 }
 
 function logPath(home: string): string {
-  return join(home, ".coco", "coco.log");
+  return join(home, ".ardo", "ardo.log");
 }
 
 function generateUnit(binaryPath: string, log: string): string {

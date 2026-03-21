@@ -1,5 +1,5 @@
 import { join } from "@std/path";
-import { loadConfig, saveConfig } from "../config/store.ts";
+import { configDir, loadConfig, saveConfig } from "../config/store.ts";
 import { isProcessAlive } from "../lib/process.ts";
 import { log } from "../lib/log.ts";
 
@@ -7,13 +7,17 @@ import { log } from "../lib/log.ts";
 // File paths
 // ---------------------------------------------------------------------------
 
-function cocoDir(): string {
+function legacyDir(): string {
   const home = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
   return join(home, ".coco");
 }
 
 function pidPath(): string {
-  return join(cocoDir(), "coco.pid");
+  return join(configDir(), "ardo.pid");
+}
+
+function legacyPidPath(): string {
+  return join(legacyDir(), "coco.pid");
 }
 
 // ---------------------------------------------------------------------------
@@ -21,25 +25,30 @@ function pidPath(): string {
 // ---------------------------------------------------------------------------
 
 async function writePid(pid: number): Promise<void> {
-  await Deno.mkdir(cocoDir(), { recursive: true });
+  await Deno.mkdir(configDir(), { recursive: true });
   await Deno.writeTextFile(pidPath(), `${pid}\n`);
 }
 
 async function readPid(): Promise<number | null> {
-  try {
-    const raw = await Deno.readTextFile(pidPath());
-    const pid = parseInt(raw.trim(), 10);
-    return isNaN(pid) ? null : pid;
-  } catch {
-    return null;
+  for (const path of [pidPath(), legacyPidPath()]) {
+    try {
+      const raw = await Deno.readTextFile(path);
+      const pid = parseInt(raw.trim(), 10);
+      if (!isNaN(pid)) return pid;
+    } catch {
+      // keep looking
+    }
   }
+  return null;
 }
 
 async function removePid(): Promise<void> {
-  try {
-    await Deno.remove(pidPath());
-  } catch {
-    // Ignore — file may not exist
+  for (const path of [pidPath(), legacyPidPath()]) {
+    try {
+      await Deno.remove(path);
+    } catch {
+      // Ignore — file may not exist
+    }
   }
 }
 
@@ -99,7 +108,7 @@ export async function startDaemon(): Promise<StartResult> {
     await saveConfig({ ...config, port });
   }
 
-  // Self-spawn: coco --daemon
+  // Self-spawn current CLI entrypoint with --daemon
   const self = Deno.execPath();
   const child = new Deno.Command(self, {
     args: ["run", "--allow-all", Deno.mainModule, "--daemon"],

@@ -12,8 +12,6 @@ import type { ServiceManager } from "./interfaces.ts";
 // ---------------------------------------------------------------------------
 
 const PLIST_LABEL = "com.ardo";
-const LEGACY_PLIST_LABEL = "com.coco";
-
 // ---------------------------------------------------------------------------
 // Private helpers
 // ---------------------------------------------------------------------------
@@ -31,7 +29,7 @@ function legacyPlistPath(home: string): string {
 }
 
 function logPath(home: string): string {
-  return join(home, ".coco", "coco.log");
+  return join(home, ".ardo", "ardo.log");
 }
 
 function generatePlist(binaryPath: string, log: string): string {

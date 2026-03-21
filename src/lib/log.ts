@@ -1,4 +1,5 @@
 import { join } from "@std/path";
+import { configDir } from "../config/store.ts";
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
@@ -10,6 +11,25 @@ const LEVELS: Record<LogLevel, number> = {
 };
 
 let currentLevel: LogLevel = "info";
+
+function legacyLogPath(): string {
+  const home = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
+  return join(home, ".coco", "coco.log");
+}
+
+export function getLogPath(): string {
+  return join(configDir(), "ardo.log");
+}
+
+async function resolveReadableLogPath(): Promise<string> {
+  const canonical = getLogPath();
+  try {
+    await Deno.stat(canonical);
+    return canonical;
+  } catch {
+    return legacyLogPath();
+  }
+}
 
 export function setLogLevel(level: LogLevel): void {
   currentLevel = level;
@@ -29,9 +49,10 @@ export async function log(
     ...meta,
   });
 
-  const logPath = join(Deno.env.get("HOME") ?? "~", ".coco", "coco.log");
+  const logPath = getLogPath();
 
   try {
+    await Deno.mkdir(configDir(), { recursive: true });
     await Deno.writeTextFile(logPath, entry + "\n", { append: true });
   } catch {
     // no-op when log file is unwritable (e.g. permissions, missing dir)
@@ -43,7 +64,7 @@ export async function readLastLogLines(
   level: LogLevel,
   n: number,
 ): Promise<string[]> {
-  const logPath = join(Deno.env.get("HOME") ?? "~", ".coco", "coco.log");
+  const logPath = await resolveReadableLogPath();
   try {
     const text = await Deno.readTextFile(logPath);
     const lines = text.trim().split("\n").filter((l) => l.trim());

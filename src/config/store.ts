@@ -15,7 +15,7 @@ export interface ConfigEntry {
 export interface CocoConfig {
   /** TCP port the proxy listens on. Default: 11434. */
   port: number;
-  /** Log level for ~/.coco/coco.log. Default: "info". */
+  /** Log level for ~/.ardo/ardo.log. Default: "info". */
   logLevel: LogLevel;
   /**
    * User-defined model alias overrides.
@@ -39,13 +39,106 @@ export const DEFAULT_CONFIG: CocoConfig = {
   lastStarted: null,
 };
 
-function configDir(): string {
+function homeDir(): string {
+  return Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
+}
+
+function envWithLegacy(canonical: string, legacy: string): string | undefined {
+  const canonicalValue = Deno.env.get(canonical);
+  if (canonicalValue !== undefined) return canonicalValue;
+
+  const legacyValue = Deno.env.get(legacy);
+  if (legacyValue !== undefined) {
+    console.error(
+      `Warning: '${legacy}' is deprecated; use '${canonical}' instead.`,
+    );
+  }
+  return legacyValue;
+}
+
+export function configDir(): string {
+  const fromEnv = envWithLegacy("ARDO_CONFIG_DIR", "COCO_CONFIG_DIR");
+  if (fromEnv && fromEnv.trim()) return fromEnv;
+
   const home = Deno.env.get("HOME") ?? Deno.env.get("USERPROFILE") ?? ".";
-  return join(home, ".coco");
+  return join(home, ".ardo");
+}
+
+function legacyConfigDir(): string {
+  return join(homeDir(), ".coco");
+}
+
+function ardoConfigPath(): string {
+  return join(configDir(), "config.json");
+}
+
+function legacyConfigPath(): string {
+  return join(legacyConfigDir(), "config.json");
 }
 
 function configPath(): string {
-  return join(configDir(), "config.json");
+  return ardoConfigPath();
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await Deno.stat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveConfigPathForLoad(): Promise<string> {
+  const canonical = ardoConfigPath();
+  if (await fileExists(canonical)) return canonical;
+
+  const legacy = legacyConfigPath();
+  if (!await fileExists(legacy)) return canonical;
+
+  // Non-destructive migration: copy legacy config forward if canonical is absent.
+  await Deno.mkdir(configDir(), { recursive: true });
+  try {
+    await Deno.copyFile(legacy, canonical);
+    console.error(
+      "Warning: Migrated config from ~/.coco/config.json to ~/.ardo/config.json.",
+    );
+    return canonical;
+  } catch {
+    console.error(
+      "Warning: Using legacy config at ~/.coco/config.json; migration to ~/.ardo/config.json failed.",
+    );
+    return legacy;
+  }
+}
+
+function applyEnvOverrides(config: CocoConfig): CocoConfig {
+  const portRaw = envWithLegacy("ARDO_PORT", "COCO_PORT");
+  const logLevelRaw = envWithLegacy("ARDO_LOG_LEVEL", "COCO_LOG_LEVEL");
+  const policyRaw = envWithLegacy(
+    "ARDO_MODEL_MAPPING_POLICY",
+    "COCO_MODEL_MAPPING_POLICY",
+  );
+
+  const next: CocoConfig = { ...config };
+
+  if (portRaw !== undefined) {
+    const parsed = parseInt(portRaw, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid ARDO_PORT/COCO_PORT value: ${portRaw}`);
+    }
+    next.port = parsed;
+  }
+
+  if (logLevelRaw !== undefined) {
+    next.logLevel = logLevelRaw as LogLevel;
+  }
+
+  if (policyRaw !== undefined) {
+    next.modelMappingPolicy = policyRaw as ModelMappingPolicy;
+  }
+
+  return next;
 }
 
 function validate(config: CocoConfig): void {
@@ -78,21 +171,26 @@ function validate(config: CocoConfig): void {
 }
 
 export async function loadConfig(): Promise<CocoConfig> {
-  const path = configPath();
+  const path = await resolveConfigPathForLoad();
   try {
     const raw = await Deno.readTextFile(path);
     const parsed = JSON.parse(raw) as Partial<CocoConfig>;
-    const config: CocoConfig = { ...DEFAULT_CONFIG, ...parsed };
+    const config: CocoConfig = applyEnvOverrides({
+      ...DEFAULT_CONFIG,
+      ...parsed,
+    });
     validate(config);
     return config;
   } catch (err) {
     if (err instanceof Deno.errors.NotFound) {
       // First run — create config dir and return defaults
       await Deno.mkdir(configDir(), { recursive: true });
-      return { ...DEFAULT_CONFIG };
+      const config = applyEnvOverrides({ ...DEFAULT_CONFIG });
+      validate(config);
+      return config;
     }
     if (err instanceof SyntaxError) {
-      throw new Error(`Failed to parse ~/.coco/config.json: ${err.message}`);
+      throw new Error(`Failed to parse ${path}: ${err.message}`);
     }
     throw err;
   }

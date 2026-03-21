@@ -22,6 +22,7 @@ import {
 import { keypress, mapKey } from "../tui/input.ts";
 import { fetchModelList } from "../copilot/models.ts";
 import { basename } from "@std/path";
+import { getLogPath } from "../lib/log.ts";
 
 const APP_NAME = "Ardo";
 const CANONICAL_CLI_NAME = "ardo";
@@ -254,7 +255,7 @@ async function cmdDoctor(): Promise<void> {
   console.log(divider);
 
   // Show last 5 error-level lines from the log file
-  const logPath = `${Deno.env.get("HOME") ?? "~"}/.coco/coco.log`;
+  const logPath = getLogPath();
   let lastErrors = "(none)";
   try {
     const raw = await Deno.readTextFile(logPath);
