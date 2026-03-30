@@ -2,7 +2,7 @@ import { getDaemonPid, startDaemon, stopDaemon } from "../daemon.ts";
 import type { StartResult } from "../daemon.ts";
 import type { DaemonManager } from "./interfaces.ts";
 
-export class CocoDaemonManager implements DaemonManager {
+export class ModmuxDaemonManager implements DaemonManager {
   async isRunning(): Promise<boolean> {
     return (await getDaemonPid()) !== null;
   }

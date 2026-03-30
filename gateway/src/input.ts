@@ -1,5 +1,5 @@
 /**
- * Terminal key-input handling for the Coco TUI.
+ * Terminal key-input handling for the Modmux TUI.
  *
  * Wraps @cliffy/keypress which manages raw mode automatically.
  */

@@ -24,7 +24,7 @@ configuration namespace.
 | npm package      | `@myty/coco`           | `@modmux/core`           |
 | Config directory | `~/.coco`              | `~/.modmux`              |
 | PID file         | `~/.coco/coco.pid`     | `~/.modmux/modmux.pid`   |
-| Log file         | `~/.coco/coco.log`     | `~/.modmux/modm.log`     |
+| Log file         | `~/.coco/coco.log`     | `~/.modmux/modmux.log`   |
 | Env prefix       | `COCO_*`               | `MODMUX_*`               |
 
 ## Upgrade Steps

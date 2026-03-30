@@ -1,12 +1,12 @@
 /**
- * TUI renderer for Coco.
+ * TUI renderer for Modmux.
  *
  * Uses @cliffy/ansi for ANSI escape sequences and cursor control.
  * Performs a full redraw on every state change to avoid cursor arithmetic bugs.
  *
  * Layout:
  *
- *   Coco - Local AI Gateway
+ *   Modmux - Local AI Gateway
  *   ──────────────────────────────────────────────
  *   Status: Running on http://localhost:11434
  *   Copilot: Authenticated ✓
@@ -158,7 +158,7 @@ export function renderFull(state: TUIState): void {
 
   const lines: string[] = [
     colors.bold.cyan(LOGO),
-    colors.bold("Coco - Local AI Gateway"),
+    colors.bold("Modmux - Local AI Gateway"),
     DIVIDER,
     statusLine,
     authLine,

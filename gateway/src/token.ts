@@ -235,7 +235,7 @@ class SecretServiceStore implements TokenStore {
     const child = new Deno.Command("secret-tool", {
       args: [
         "store",
-        "--label=Coco Copilot Token",
+        "--label=Modmux Copilot Token",
         "service",
         KEYCHAIN_SERVICE,
         "account",

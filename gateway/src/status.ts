@@ -15,7 +15,7 @@ export interface ServiceState {
  * 1. Checking whether the OS service is installed
  * 2. If installed — checking service running state via OS manager
  * 3. If not installed — reading the PID file and checking liveness + /health
- * 4. Reading Coco config for the port
+ * 4. Reading Modmux config for the port
  * 5. Checking stored token validity
  */
 export async function getServiceState(): Promise<ServiceState> {
@@ -43,7 +43,7 @@ export async function getServiceState(): Promise<ServiceState> {
     return { running, serviceInstalled, pid: null, port, authStatus };
   }
 
-  // Coco-managed daemon: check PID + /health
+  // Modmux-managed daemon: check PID + /health
   const running = pid !== null;
 
   // If running, confirm reachability via /health (best-effort)

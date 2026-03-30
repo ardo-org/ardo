@@ -2,7 +2,7 @@
  * Per-agent configuration writers.
  *
  * Writes the endpoint configuration for each supported agent so it routes
- * API traffic through Coco's local proxy. Backs up original files and
+ * API traffic through Modmux's local proxy. Backs up original files and
  * supports reversible unconfigure.
  */
 
@@ -225,7 +225,7 @@ const AGENT_WRITERS: Record<string, AgentWriter> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Perform a 1-token probe against the running Coco proxy to verify
+ * Perform a 1-token probe against the running Modmux proxy to verify
  * that an agent's config would work. Returns true if the probe succeeds.
  */
 export async function validateConfig(port: number): Promise<boolean> {
@@ -296,7 +296,7 @@ export async function verifyAgentConfig(entry: ConfigEntry): Promise<boolean> {
 // ---------------------------------------------------------------------------
 
 /**
- * Configure an agent to route through Coco's proxy.
+ * Configure an agent to route through Modmux's proxy.
  * Backs up any existing config, writes the agent-specific format, runs a
  * validation probe, and persists the ConfigEntry to ModmuxConfig.
  */
@@ -343,7 +343,7 @@ export async function configureAgent(
 }
 
 /**
- * Revert an agent's configuration to its pre-Coco state.
+ * Revert an agent's configuration to its pre-Modmux state.
  * Restores backup if one exists, or deletes the written file.
  * Removes the ConfigEntry from ModmuxConfig.
  */
@@ -360,7 +360,7 @@ export async function unconfigureAgent(
     // Restore backup
     await Deno.rename(entry.backupPath, entry.configPath);
   } else {
-    // No prior file -- delete the one Coco created
+    // No prior file -- delete the one Modmux created
     try {
       await Deno.remove(entry.configPath);
     } catch {

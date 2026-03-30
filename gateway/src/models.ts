@@ -1,7 +1,7 @@
 /**
  * Default model alias map: friendly/legacy name → Copilot API model ID.
  *
- * User overrides in CocoConfig.modelMap are merged over this at runtime;
+ * User overrides in ModmuxConfig.modelMap are merged over this at runtime;
  * user entries win. Unknown names pass through unchanged.
  */
 export const DEFAULT_MODEL_MAP: Record<string, string> = {
@@ -42,7 +42,7 @@ export const DEFAULT_MODEL_MAP: Record<string, string> = {
  * Resolve a requested model name to the Copilot model ID.
  *
  * Resolution order:
- * 1. userOverrides (from CocoConfig.modelMap)
+ * 1. userOverrides (from ModmuxConfig.modelMap)
  * 2. DEFAULT_MODEL_MAP
  * 3. Pass through unchanged (Copilot may accept the raw name)
  */
