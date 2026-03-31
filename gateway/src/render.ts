@@ -32,13 +32,13 @@ import type { ServiceState } from "./status.ts";
 
 const DIVIDER = "──────────────────────────────────────────────";
 
-// Pre-generated with figlet "Slant" font
+// Pre-generated with figlet "slant" font
 const LOGO = [
-  "    ___             __      ",
-  "   /   |  _________/ /___   ",
-  "  / /| | / ___/ __  / __ \\  ",
-  " / ___ |/ /  / /_/ / /_/ /  ",
-  "/_/  |_/_/   \\__,_/\\____/   ",
+  "                        __                    ",
+  "   ____ ___  ____  ____/ /___ ___  __  ___  __",
+  "  / __ `__ \\/ __ \\/ __  / __ `__ \\/ / / / |/_/",
+  " / / / / / / /_/ / /_/ / / / / / / /_/ />  <  ",
+  "/_/ /_/ /_/\\____/\\__,_/_/ /_/ /_/\\__,_/_/|_|  ",
 ].join("\n");
 
 // ---------------------------------------------------------------------------
@@ -158,7 +158,6 @@ export function renderFull(state: TUIState): void {
 
   const lines: string[] = [
     colors.bold.cyan(LOGO),
-    colors.bold("Modmux - Local AI Gateway"),
     DIVIDER,
     statusLine,
     authLine,
