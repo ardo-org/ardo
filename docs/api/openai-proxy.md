@@ -342,7 +342,7 @@ For compatibility with Anthropic-expecting agents, these aliases are supported:
 ### Chat Completion
 
 ```bash
-curl -X POST http://localhost:11434/v1/chat/completions \\
+curl -X POST http://localhost:11435/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
@@ -359,7 +359,7 @@ curl -X POST http://localhost:11434/v1/chat/completions \\
 ### Streaming Chat
 
 ```bash
-curl -X POST http://localhost:11434/v1/chat/completions \\
+curl -X POST http://localhost:11435/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
@@ -378,14 +378,14 @@ curl -X POST http://localhost:11434/v1/chat/completions \\
 ### List Models
 
 ```bash
-curl http://localhost:11434/v1/models
+curl http://localhost:11435/v1/models
 ```
 
 ### Function Calling with Tool Response
 
 ```bash
 # First request with function call
-curl -X POST http://localhost:11434/v1/chat/completions \\
+curl -X POST http://localhost:11435/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
@@ -443,7 +443,7 @@ curl -X POST http://localhost:11434/v1/chat/completions \\
 from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://localhost:11434/v1",
+    base_url="http://localhost:11435/v1",
     api_key="not-needed"  # Modmux handles auth
 )
 
@@ -464,7 +464,7 @@ print(response.choices[0].message.content)
 import OpenAI from "openai";
 
 const openai = new OpenAI({
-  baseURL: "http://localhost:11434/v1",
+  baseURL: "http://localhost:11435/v1",
   apiKey: "not-needed", // Modmux handles auth
 });
 

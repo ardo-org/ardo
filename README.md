@@ -33,7 +33,7 @@ Migration guide: [MIGRATION.md](MIGRATION.md) Release notes:
 ## How It Works
 
 ```
-Coding agent → Modmux proxy (127.0.0.1:11434) → GitHub Copilot API
+Coding agent → Modmux proxy (127.0.0.1:11435) → GitHub Copilot API
                 │
                 ├── POST /v1/messages           (Anthropic)
                 ├── POST /v1/messages/count_tokens
@@ -137,7 +137,7 @@ modmux          # opens the interactive TUI
 ```
 modmux — Model Multiplexing Layer
 ─────────────────────────────────────────────
-Status: Running on http://localhost:11434
+Status: Running on http://localhost:11435
 Copilot: Authenticated ✓
 
 Agents
@@ -208,7 +208,7 @@ modmux install-service
 Modmux exposes a local metrics snapshot endpoint:
 
 ```bash
-curl http://127.0.0.1:11434/v1/usage
+curl http://127.0.0.1:11435/v1/usage
 ```
 
 Response shape:
@@ -305,7 +305,7 @@ deno task compile
 <details>
 <summary>📖 "Port already in use"</summary>
 
-- Modmux automatically scans for an available port starting from 11434
+- Modmux automatically scans for an available port starting from 11435
 - Check `modmux status` to see the actual port in use
 
 </details>

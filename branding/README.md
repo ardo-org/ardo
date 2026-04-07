@@ -56,7 +56,7 @@ Modmux should "speak" like:
 
 ```
 $ modmux start
-Modmux running on http://localhost:11434
+Modmux running on http://localhost:11435
 Providers: anthropic, openai, copilot
 Status: healthy
 

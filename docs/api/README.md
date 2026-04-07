@@ -10,7 +10,7 @@ agents.
 When running locally (default):
 
 ```
-http://localhost:11434
+http://localhost:11435
 ```
 
 The default port can be configured and Modmux will automatically scan for

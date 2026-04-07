@@ -222,7 +222,7 @@ modmux start
 **Symptoms:**
 
 ```
-Error: Address already in use (port 11434)
+Error: Address already in use (port 11435)
 ```
 
 **Solutions:**
@@ -230,10 +230,10 @@ Error: Address already in use (port 11434)
 1. **Find Conflicting Process**
    ```bash
    # macOS/Linux
-   lsof -i :11434
+   lsof -i :11435
 
    # Windows
-   netstat -ano | findstr :11434
+   netstat -ano | findstr :11435
    ```
 
 2. **Stop Conflicting Service**
@@ -440,7 +440,7 @@ modmux doctor
    cat ~/.claude/settings.json
 
    # Look for ANTHROPIC_BASE_URL and ANTHROPIC_AUTH_TOKEN
-   # Should point to http://localhost:11434
+   # Should point to http://localhost:11435
 
    # Reconfigure if wrong
    modmux unconfigure claude-code
@@ -479,7 +479,7 @@ claude-code configured, but validation failed: proxy may not be running.
 2. **Network Issues**
    ```bash
    # Test local connection
-   curl http://localhost:11434/health
+   curl http://localhost:11435/health
 
    # Should return: {"status": "ok"}
    ```
@@ -493,7 +493,7 @@ claude-code configured, but validation failed: proxy may not be running.
 **Symptoms:**
 
 ```
-curl: (7) Failed to connect to localhost port 11434: Connection refused
+curl: (7) Failed to connect to localhost port 11435: Connection refused
 ```
 
 **Solutions:**
@@ -566,7 +566,7 @@ curl: (7) Failed to connect to localhost port 11434: Connection refused
 2. **Use Valid Model Names**
    ```bash
    # Valid models (examples)
-   curl -X POST http://localhost:11434/v1/chat/completions \
+   curl -X POST http://localhost:11435/v1/chat/completions \
      -H "Content-Type: application/json" \
      -d '{"model": "gpt-4o", "messages": [...], "max_tokens": 100}'
    ```
@@ -595,7 +595,7 @@ curl: (7) Failed to connect to localhost port 11434: Connection refused
 2. **Check Usage Patterns**
    ```bash
    # Monitor request frequency
-   curl http://localhost:11434/v1/usage
+   curl http://localhost:11435/v1/usage
    ```
 
 ---
@@ -615,7 +615,7 @@ curl: (7) Failed to connect to localhost port 11434: Connection refused
    ```bash
    cat ~/.claude/settings.json
    # Should contain:
-   # "ANTHROPIC_BASE_URL": "http://localhost:11434"
+   # "ANTHROPIC_BASE_URL": "http://localhost:11435"
    # "ANTHROPIC_AUTH_TOKEN": "not-needed"
    ```
 
@@ -644,7 +644,7 @@ curl: (7) Failed to connect to localhost port 11434: Connection refused
    ```bash
    cat ~/.cline/data/globalState.json
    cat ~/.cline/data/secrets.json
-   # Should point to localhost:11434 with OpenAI format
+   # Should point to localhost:11435 with OpenAI format
    ```
 
 2. **Restart Cline**
@@ -687,7 +687,7 @@ curl: (7) Failed to connect to localhost port 11434: Connection refused
 
 ```bash
 # Check usage metrics
-curl http://localhost:11434/v1/usage
+curl http://localhost:11435/v1/usage
 # Look at averageDuration values
 ```
 
@@ -767,7 +767,7 @@ tail -f ~/.modmux/modmux.log
 
 2. **Port Binding Errors**
    ```
-   {"level":"error","message":"Address already in use","port":11434}
+   {"level":"error","message":"Address already in use","port":11435}
    ```
    Solution: Change port or stop conflicting service
 
@@ -839,13 +839,13 @@ modmux install-service
 
 ```bash
 # Check what's listening on the port
-netstat -tulpn | grep 11434  # Linux
-lsof -i :11434  # macOS
-netstat -ano | findstr :11434  # Windows
+netstat -tulpn | grep 11435  # Linux
+lsof -i :11435  # macOS
+netstat -ano | findstr :11435  # Windows
 
 # Test local connectivity
-curl -v http://localhost:11434/health
-curl -v http://127.0.0.1:11434/health
+curl -v http://localhost:11435/health
+curl -v http://127.0.0.1:11435/health
 ```
 
 ---
@@ -878,8 +878,8 @@ modmux status
 modmux doctor
 
 # Network state
-lsof -i :11434  # macOS/Linux
-netstat -ano | findstr :11434  # Windows
+lsof -i :11435  # macOS/Linux
+netstat -ano | findstr :11435  # Windows
 
 # Recent logs
 tail -50 ~/.modmux/modmux.log

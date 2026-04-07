@@ -84,7 +84,7 @@ Waiting for authentication...
 
 ```
 Authentication successful!
-Modmux is running on http://localhost:11434
+Modmux is running on http://localhost:11435
 ```
 
 ### Verification Checkpoint ✓
@@ -98,7 +98,7 @@ modmux status
 **Expected output:**
 
 ```
-Service:       running (PID 12345) on port 11434
+Service:       running (PID 12345) on port 11435
 Authentication: valid (expires in 29 days)
 Agents:        none configured
 ```
@@ -182,7 +182,7 @@ Now test that everything is working with a simple API call.
 ### Option A: Using cURL (Direct API Test)
 
 ```bash
-curl -X POST http://localhost:11434/v1/chat/completions \
+curl -X POST http://localhost:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o",
@@ -236,7 +236,7 @@ If you configured Claude Code, test it by:
 Check usage metrics to confirm requests are flowing:
 
 ```bash
-curl http://localhost:11434/v1/usage
+curl http://localhost:11435/v1/usage
 ```
 
 **Expected output:**
@@ -303,7 +303,7 @@ Run 'modmux configure <agent>' to route an agent through Modmux.
 
 ```bash
 # Test with GPT-4o Mini (faster, cheaper)
-curl -X POST http://localhost:11434/v1/chat/completions \
+curl -X POST http://localhost:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "gpt-4o-mini",
@@ -312,7 +312,7 @@ curl -X POST http://localhost:11434/v1/chat/completions \
   }'
 
 # Test with Claude alias (for Anthropic-compatible agents)
-curl -X POST http://localhost:11434/v1/messages \
+curl -X POST http://localhost:11435/v1/messages \
   -H "Content-Type: application/json" \
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -367,7 +367,7 @@ Keep an eye on your API usage:
 
 ```bash
 # Check current usage
-curl http://localhost:11434/v1/usage
+curl http://localhost:11435/v1/usage
 
 # Monitor status
 modmux status
@@ -397,8 +397,8 @@ modmux stop
 modmux start
 
 # Check for port conflicts
-lsof -i :11434  # macOS/Linux
-netstat -an | findstr 11434  # Windows
+lsof -i :11435  # macOS/Linux
+netstat -an | findstr 11435  # Windows
 ```
 
 ### Authentication Issues
@@ -425,7 +425,7 @@ which claude  # Should show path to binary
 
 ```bash
 # Verify service is running
-curl http://localhost:11434/health
+curl http://localhost:11435/health
 # Expected: {"status": "ok"}
 
 # Check authentication
@@ -433,7 +433,7 @@ modmux status
 # Should show "Authentication: valid"
 
 # Test with simple request
-curl -X POST http://localhost:11434/v1/chat/completions \
+curl -X POST http://localhost:11435/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model": "gpt-4o", "messages": [{"role": "user", "content": "test"}], "max_tokens": 10}'
 ```

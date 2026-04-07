@@ -355,7 +355,7 @@ You can also use GitHub Copilot model names directly (e.g., `gpt-4o`,
 ### Simple Request
 
 ```bash
-curl -X POST http://localhost:11434/v1/messages \\
+curl -X POST http://localhost:11435/v1/messages \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -372,7 +372,7 @@ curl -X POST http://localhost:11434/v1/messages \\
 ### Streaming Request
 
 ```bash
-curl -X POST http://localhost:11434/v1/messages \\
+curl -X POST http://localhost:11435/v1/messages \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "claude-3-5-sonnet-20241022",

@@ -342,13 +342,13 @@ requests have been made:
 ### Get Usage Metrics
 
 ```bash
-curl http://localhost:11434/v1/usage
+curl http://localhost:11435/v1/usage
 ```
 
 ### Create Response
 
 ```bash
-curl -X POST http://localhost:11434/v1/responses \\
+curl -X POST http://localhost:11435/v1/responses \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
@@ -360,7 +360,7 @@ curl -X POST http://localhost:11434/v1/responses \\
 ### Streaming Response
 
 ```bash
-curl -X POST http://localhost:11434/v1/responses \\
+curl -X POST http://localhost:11435/v1/responses \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",
@@ -374,7 +374,7 @@ curl -X POST http://localhost:11434/v1/responses \\
 ### Structured Input
 
 ```bash
-curl -X POST http://localhost:11434/v1/responses \\
+curl -X POST http://localhost:11435/v1/responses \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "gpt-4o",

@@ -186,7 +186,7 @@ Calculate costs before making expensive API calls:
 
 ```bash
 # Count tokens for a large context
-curl -X POST http://localhost:11434/v1/messages/count_tokens \\
+curl -X POST http://localhost:11435/v1/messages/count_tokens \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -211,7 +211,7 @@ import requests
 
 def check_token_count(messages, model="claude-3-5-sonnet-20241022"):
     response = requests.post(
-        "http://localhost:11434/v1/messages/count_tokens",
+        "http://localhost:11435/v1/messages/count_tokens",
         json={
             "model": model,
             "messages": messages
@@ -235,7 +235,7 @@ Compare different prompt approaches:
 
 ```bash
 # Option A: Verbose prompt
-curl -X POST http://localhost:11434/v1/messages/count_tokens \\
+curl -X POST http://localhost:11435/v1/messages/count_tokens \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -248,7 +248,7 @@ curl -X POST http://localhost:11434/v1/messages/count_tokens \\
   }'
 
 # Option B: Concise prompt
-curl -X POST http://localhost:11434/v1/messages/count_tokens \\
+curl -X POST http://localhost:11435/v1/messages/count_tokens \\
   -H "Content-Type: application/json" \\
   -d '{
     "model": "claude-3-5-sonnet-20241022",
@@ -383,7 +383,7 @@ import requests
 def count_tokens(messages, model="claude-3-5-sonnet-20241022"):
     """Count tokens for a conversation."""
     response = requests.post(
-        "http://localhost:11434/v1/messages/count_tokens",
+        "http://localhost:11435/v1/messages/count_tokens",
         json={
             "model": model,
             "messages": messages
@@ -410,7 +410,7 @@ print(f"Conversation uses {token_count} tokens")
 ```javascript
 async function countTokens(messages, model = "claude-3-5-sonnet-20241022") {
   const response = await fetch(
-    "http://localhost:11434/v1/messages/count_tokens",
+    "http://localhost:11435/v1/messages/count_tokens",
     {
       method: "POST",
       headers: {
