@@ -5,7 +5,11 @@
       "Bash(deno task:*)",
       "mcp__lean-spec__list",
       "mcp__lean-spec__board",
-      "mcp__lean-spec__view"
+      "mcp__lean-spec__view",
+      "Bash(deno fmt:*)",
+      "Bash(deno run:*)",
+      "Bash(deno lint:*)",
+      "Bash(deno check:*)"
     ]
   },
   "enabledMcpjsonServers": [

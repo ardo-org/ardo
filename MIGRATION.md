@@ -16,16 +16,16 @@ configuration namespace.
 
 ## Before/After Mapping
 
-| Area             | Before                 | After                    |
-| ---------------- | ---------------------- | ------------------------ |
+| Area             | Before                 | After                      |
+| ---------------- | ---------------------- | -------------------------- |
 | Repository       | `github.com/myty/coco` | `github.com/modmux/modmux` |
-| CLI command      | `coco`                 | `modmux`                 |
-| Installation     | `jsr:@myty/coco`       | From source or binary    |
-| Installation     | `@myty/coco`           | From source or binary    |
-| Config directory | `~/.coco`              | `~/.modmux`              |
-| PID file         | `~/.coco/coco.pid`     | `~/.modmux/modmux.pid`   |
-| Log file         | `~/.coco/coco.log`     | `~/.modmux/modmux.log`   |
-| Env prefix       | `COCO_*`               | `MODMUX_*`               |
+| CLI command      | `coco`                 | `modmux`                   |
+| Installation     | `jsr:@myty/coco`       | From source or binary      |
+| Installation     | `@myty/coco`           | From source or binary      |
+| Config directory | `~/.coco`              | `~/.modmux`                |
+| PID file         | `~/.coco/coco.pid`     | `~/.modmux/modmux.pid`     |
+| Log file         | `~/.coco/coco.log`     | `~/.modmux/modmux.log`     |
+| Env prefix       | `COCO_*`               | `MODMUX_*`                 |
 
 ## Upgrade Steps
 
@@ -36,7 +36,8 @@ git clone https://github.com/modmux/modmux.git && cd modmux
 deno task install
 ```
 
-Or download a binary from [GitHub Releases](https://github.com/modmux/modmux/releases).
+Or download a binary from
+[GitHub Releases](https://github.com/modmux/modmux/releases).
 
 2. Update scripts and automation from `coco` to `modmux`.
 
@@ -72,16 +73,16 @@ configuration namespace.
 
 ## Before/After Mapping
 
-| Area             | Before                     | After                        |
-| ---------------- | -------------------------- | ---------------------------- |
-| Repository       | `github.com/ardo-org/ardo` | `github.com/modmux/modmux`     |
-| CLI command      | `ardo`                     | `modmux`                     |
-| Installation     | `jsr:@ardo-org/ardo`       | From source or binary        |
-| Installation     | `@myty/ardo`               | From source or binary        |
-| Config directory | `~/.ardo`                  | `~/.modmux`                  |
-| PID file         | `~/.ardo/ardo.pid`         | `~/.modmux/modmux.pid`       |
-| Log file         | `~/.ardo/ardo.log`         | `~/.modmux/modmux.log`       |
-| Env prefix       | `ARDO_*`                   | `MODMUX_*`                   |
+| Area             | Before                     | After                      |
+| ---------------- | -------------------------- | -------------------------- |
+| Repository       | `github.com/ardo-org/ardo` | `github.com/modmux/modmux` |
+| CLI command      | `ardo`                     | `modmux`                   |
+| Installation     | `jsr:@ardo-org/ardo`       | From source or binary      |
+| Installation     | `@myty/ardo`               | From source or binary      |
+| Config directory | `~/.ardo`                  | `~/.modmux`                |
+| PID file         | `~/.ardo/ardo.pid`         | `~/.modmux/modmux.pid`     |
+| Log file         | `~/.ardo/ardo.log`         | `~/.modmux/modmux.log`     |
+| Env prefix       | `ARDO_*`                   | `MODMUX_*`                 |
 
 ## Upgrade Steps
 
@@ -92,7 +93,8 @@ git clone https://github.com/modmux/modmux.git && cd modmux
 deno task install
 ```
 
-Or download a binary from [GitHub Releases](https://github.com/modmux/modmux/releases).
+Or download a binary from
+[GitHub Releases](https://github.com/modmux/modmux/releases).
 
 2. Update scripts and automation from `ardo` to `modmux`.
 

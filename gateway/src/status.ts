@@ -76,8 +76,13 @@ export async function getServiceState(): Promise<ServiceState> {
 /**
  * Format a ServiceState for human-readable `modmux status` output.
  * agents: list of configured agent names from Modmux config entries
+ * version: application version string to display
  */
-export function formatStatus(state: ServiceState, agents: string[]): string {
+export function formatStatus(
+  state: ServiceState,
+  agents: string[],
+  version: string,
+): string {
   const serviceLine = state.serviceInstalled
     ? "Service:  Installed"
     : "Service:  Not installed";
@@ -101,5 +106,7 @@ export function formatStatus(state: ServiceState, agents: string[]): string {
     ? "Copilot:  Not authenticated"
     : "Copilot:  Unknown";
 
-  return `${serviceLine}\n${stateLine}\n${agentsLine}\n${authLine}`;
+  const versionLine = `Version:  v${version}`;
+
+  return `${serviceLine}\n${stateLine}\n${agentsLine}\n${authLine}\n${versionLine}`;
 }

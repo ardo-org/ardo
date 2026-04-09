@@ -1,6 +1,10 @@
 {
+  "name": "@modmux/cli",
   "version": "0.3.0",
   "license": "MIT",
+  "exports": {
+    ".": "./src/main.ts"
+  },
   "compilerOptions": {
     "lib": ["deno.window"],
     "strict": true

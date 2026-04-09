@@ -130,7 +130,7 @@ async function cmdStatus(): Promise<void> {
     loadConfig().catch(() => null),
   ]);
   const agentNames = config?.agents.map((a) => a.agentName) ?? [];
-  console.log(formatStatus(state, agentNames));
+  console.log(formatStatus(state, agentNames, VERSION));
   Deno.exit(state.running ? 0 : 1);
 }
 
@@ -533,7 +533,7 @@ async function main() {
           loadConfig().catch(() => null),
         ]);
         const agentNames = config?.agents.map((a) => a.agentName) ?? [];
-        console.log(formatStatus(state, agentNames));
+        console.log(formatStatus(state, agentNames, VERSION));
         Deno.exit(0);
         return;
       }
