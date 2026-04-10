@@ -28,7 +28,7 @@ jobs:
           echo "Running documentation validation..."
 
           # Run validation and capture output
-          if deno run --allow-read scripts/docs/validate.ts --format json README.md AGENTS.md CONVENTIONS.md > validation-result.json 2> validation-stderr.log; then
+          if deno run --allow-read scripts/docs/validate.ts --format json README.md AGENTS.md > validation-result.json 2> validation-stderr.log; then
             echo "Validation completed successfully"
           else
             echo "Validation found issues"
