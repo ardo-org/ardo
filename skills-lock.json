@@ -1,10 +1,35 @@
 {
   "version": 1,
   "skills": {
+    "agent-browser": {
+      "source": "codervisor/lean-spec",
+      "sourceType": "github",
+      "computedHash": "3aa8074455dca8b414738a5540deb8f724f6ad170bd576ecf4b5e7832944acf2"
+    },
+    "github-integration": {
+      "source": "codervisor/lean-spec",
+      "sourceType": "github",
+      "computedHash": "14357468e9d8ef12bb896d08228f938bcc0e85a7eff758baec01f9edd2547e95"
+    },
+    "leanspec-development": {
+      "source": "codervisor/lean-spec",
+      "sourceType": "github",
+      "computedHash": "2d46639f01138e7fd1b042f320885ee28ff70d58dbee7d6d5f46261ade69e0f3"
+    },
     "leanspec-sdd": {
       "source": "codervisor/lean-spec",
       "sourceType": "github",
       "computedHash": "e7ebfb2196cbeda1f59830de0eb07f571ac149f8dd644f57137920f4c6c05178"
+    },
+    "parallel-worktrees": {
+      "source": "codervisor/lean-spec",
+      "sourceType": "github",
+      "computedHash": "1848a67829d211a61b007f18d6f91690816c140b738b00265cd2f8fe46a556c6"
+    },
+    "watch-ci": {
+      "source": "codervisor/lean-spec",
+      "sourceType": "github",
+      "computedHash": "89d08f4bb0b69d5b34cada3bad3f05b6de5064d7dc274a57d736d1076458b5b2"
     }
   }
 }

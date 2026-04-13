@@ -6,6 +6,7 @@ import { handleResponses } from "./responses-handler.ts";
 import { addShutdownHandler, getConfig } from "./server.ts";
 import {
   getUsageMetricsSnapshot,
+  getUsageMetricsSnapshotWithGitHub,
   initializeUsageMetrics,
   recordUsage,
 } from "./usage-metrics.ts";
@@ -111,7 +112,7 @@ export async function handleRequest(req: Request): Promise<Response> {
     } else if (req.method === "GET" && url.pathname === "/v1/models") {
       response = await handleModels();
     } else if (req.method === "GET" && url.pathname === "/v1/usage") {
-      response = jsonResponse(getUsageMetricsSnapshot());
+      response = jsonResponse(await getUsageMetricsSnapshotWithGitHub());
     } else {
       response = errorResponse(
         404,

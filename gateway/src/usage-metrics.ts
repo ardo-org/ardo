@@ -1,6 +1,12 @@
 import { dirname, join } from "@std/path";
 import { configDir } from "./store.ts";
 import { log } from "./log.ts";
+import type { GitHubCopilotUsageData } from "./github-usage.ts";
+import {
+  fetchGitHubCopilotQuota,
+  initializeGitHubUsageTracking,
+  shutdownGitHubUsageTracking
+} from "./github-usage.ts";
 
 interface StatusBuckets {
   "2xx": number;
@@ -34,6 +40,7 @@ export interface UsageMetricsSnapshot {
   endpoints: Record<string, EndpointMetrics>;
   models: Record<string, number>;
   agents: Record<string, number>;
+  github_copilot?: GitHubCopilotUsageData;
 }
 
 export interface UsageMetricsOptions {
@@ -216,6 +223,9 @@ export async function initializeUsageMetrics(
       void persistSnapshot();
     }, options.snapshotIntervalMs);
   }
+
+  // Initialize GitHub usage tracking
+  await initializeGitHubUsageTracking();
 }
 
 export async function shutdownUsageMetrics(): Promise<void> {
@@ -225,6 +235,9 @@ export async function shutdownUsageMetrics(): Promise<void> {
   }
 
   await persistSnapshot();
+
+  // Shutdown GitHub usage tracking
+  await shutdownGitHubUsageTracking();
 }
 
 export function recordUsage(
@@ -281,4 +294,29 @@ export function getUsageMetricsSnapshot(): UsageMetricsSnapshot {
     models: { ...state.models },
     agents: { ...state.agents },
   };
+}
+
+export async function getUsageMetricsSnapshotWithGitHub(): Promise<UsageMetricsSnapshot> {
+  const snapshot = getUsageMetricsSnapshot();
+
+  try {
+    log("info", "Attempting to fetch GitHub Copilot data for usage snapshot");
+    const githubData = await fetchGitHubCopilotQuota();
+    if (githubData) {
+      snapshot.github_copilot = githubData;
+      log("info", "Successfully included GitHub Copilot data in usage snapshot", {
+        status: githubData.status,
+        usedRequests: githubData.quota.usedRequests,
+      });
+    } else {
+      log("warn", "GitHub Copilot data was null, not including in snapshot");
+    }
+  } catch (error) {
+    log("error", "Failed to fetch GitHub Copilot data for usage snapshot", {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    });
+  }
+
+  return snapshot;
 }
