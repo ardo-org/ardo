@@ -91,9 +91,9 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
     filePath: null,
   },
   githubUsage: {
-    backend: "external-cli",
-    cliUrl: "http://localhost:4321",
-    autoStart: true,
+    backend: "disabled",
+    cliUrl: null,
+    autoStart: false,
     preferredPort: 4321,
   },
 };
