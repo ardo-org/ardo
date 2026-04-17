@@ -120,23 +120,29 @@ export async function resolveModelForEndpoint(
     };
   }
 
-  // If the exact model (or a direct alias) is available in the live model
-  // list, use it — even for gpt-5.x families that Copilot now supports natively.
+  // If there's an explicit alias (user override or DEFAULT_MODEL_MAP), honour it —
+  // aliases exist precisely because the raw model name doesn't work with
+  // chat/completions (e.g. gpt-5.3-codex is responses-only on Copilot).
+  if (aliasResolved !== requestedModel) {
+    const aliasTarget = available.has(aliasResolved)
+      ? aliasResolved
+      : pickFirstAvailable(familyCandidates(requestedModel), available) ??
+        aliasResolved;
+    return {
+      requestedModel,
+      resolvedModel: aliasTarget,
+      strategy: aliasTarget === aliasResolved
+        ? "alias-or-normalized"
+        : "family-fallback",
+    };
+  }
+
+  // No alias — if the exact model is in the live Copilot list use it directly.
   if (usesChatCompletionsBackend && available.has(requestedModel)) {
     return {
       requestedModel,
       resolvedModel: requestedModel,
       strategy: "exact",
-    };
-  }
-  if (
-    usesChatCompletionsBackend && aliasResolved !== requestedModel &&
-    available.has(aliasResolved)
-  ) {
-    return {
-      requestedModel,
-      resolvedModel: aliasResolved,
-      strategy: "alias-or-normalized",
     };
   }
 
