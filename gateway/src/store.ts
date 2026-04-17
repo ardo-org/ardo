@@ -47,6 +47,15 @@ export interface GitHubUsageConfig {
   preferredPort: number;
 }
 
+export type UpgradeMethod = "binary" | "mise";
+
+export interface UpdatesConfig {
+  /** Whether to check for newer versions once per day. Default: true. */
+  checkEnabled: boolean;
+  /** How to perform upgrades. "binary" replaces the binary in-place; "mise" delegates to `mise upgrade modmux`. Default: "binary". */
+  upgradeMethod: UpgradeMethod;
+}
+
 export interface ModmuxConfig {
   /** TCP port the proxy listens on. Default: 11435. */
   port: number;
@@ -69,6 +78,8 @@ export interface ModmuxConfig {
   usageMetrics: UsageMetricsConfig;
   /** GitHub Copilot quota backend configuration. */
   githubUsage: GitHubUsageConfig;
+  /** Update check and upgrade configuration. */
+  updates: UpdatesConfig;
 }
 
 export const DEFAULT_CONFIG: ModmuxConfig = {
@@ -95,6 +106,10 @@ export const DEFAULT_CONFIG: ModmuxConfig = {
     cliUrl: null,
     autoStart: false,
     preferredPort: 4321,
+  },
+  updates: {
+    checkEnabled: true,
+    upgradeMethod: "binary",
   },
 };
 
@@ -147,6 +162,8 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
   const githubUsagePreferredPortRaw = envValue(
     "MODMUX_GITHUB_USAGE_PREFERRED_PORT",
   );
+  const updateCheckEnabledRaw = envValue("MODMUX_UPDATE_CHECK_ENABLED");
+  const upgradeMethodRaw = envValue("MODMUX_UPGRADE_METHOD");
 
   const next: ModmuxConfig = { ...config };
 
@@ -200,6 +217,23 @@ function applyEnvOverrides(config: ModmuxConfig): ModmuxConfig {
       );
     }
     next.githubUsage.preferredPort = parsed;
+  }
+
+  if (updateCheckEnabledRaw !== undefined || upgradeMethodRaw !== undefined) {
+    next.updates = { ...config.updates };
+  }
+  if (updateCheckEnabledRaw !== undefined) {
+    if (
+      updateCheckEnabledRaw !== "true" && updateCheckEnabledRaw !== "false"
+    ) {
+      throw new Error(
+        `Invalid MODMUX_UPDATE_CHECK_ENABLED value: ${updateCheckEnabledRaw}`,
+      );
+    }
+    next.updates.checkEnabled = updateCheckEnabledRaw === "true";
+  }
+  if (upgradeMethodRaw !== undefined) {
+    next.updates.upgradeMethod = upgradeMethodRaw as UpgradeMethod;
   }
 
   return next;
@@ -317,6 +351,15 @@ function validate(config: ModmuxConfig): void {
       );
     }
   }
+
+  if (config.updates) {
+    const validMethods: UpgradeMethod[] = ["binary", "mise"];
+    if (!validMethods.includes(config.updates.upgradeMethod)) {
+      throw new Error(
+        `Invalid updates.upgradeMethod: ${config.updates.upgradeMethod}. Must be "binary" or "mise".`,
+      );
+    }
+  }
 }
 
 export async function loadConfig(): Promise<ModmuxConfig> {
@@ -340,6 +383,10 @@ export async function loadConfig(): Promise<ModmuxConfig> {
       githubUsage: {
         ...DEFAULT_CONFIG.githubUsage,
         ...(parsed.githubUsage || {}),
+      },
+      updates: {
+        ...DEFAULT_CONFIG.updates,
+        ...(parsed.updates || {}),
       },
     });
     validate(config);

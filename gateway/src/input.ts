@@ -15,6 +15,9 @@ export type Key =
   | "Escape"
   | "Up"
   | "Down"
+  | "Left"
+  | "Right"
+  | "Settings"
   | "CtrlC"
   | "Other";
 
@@ -37,6 +40,13 @@ export function mapKey(
       return "Up";
     case "down":
       return "Down";
+    case "left":
+      return "Left";
+    case "right":
+      return "Right";
+    case "s":
+    case "S":
+      return "Settings";
     default:
       return "Other";
   }

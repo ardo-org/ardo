@@ -25,6 +25,7 @@ import { colors } from "@cliffy/ansi/colors";
 import { tty } from "@cliffy/ansi/tty";
 import type { DetectionResult } from "./detector.ts";
 import type { ServiceState } from "./status.ts";
+import type { ModmuxConfig } from "./store.ts";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -46,6 +47,7 @@ const LOGO = [
 // ---------------------------------------------------------------------------
 
 export type AgentConfigStatus = "configured" | "misconfigured" | "unconfigured";
+export type TUIMode = "agents" | "settings";
 
 export interface AgentRow {
   name: string;
@@ -56,11 +58,24 @@ export interface AgentRow {
   selected: boolean;
 }
 
+export interface SettingsRow {
+  /** Unique key matching the config field (e.g. "checkEnabled"). */
+  id: string;
+  label: string;
+  value: string;
+  options: readonly string[];
+}
+
 export interface TUIState {
+  mode: TUIMode;
   serviceState: ServiceState;
   agents: AgentRow[];
   /** Index of the cursor row (0-based into agents array). */
   cursorIndex: number;
+  /** Newer version string if an update is available, null otherwise. */
+  updateVersion: string | null;
+  settings: SettingsRow[];
+  settingsCursorIndex: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +90,8 @@ export function buildTUIState(
   detectionResults: DetectionResult[],
   configuredAgentNames: Set<string>,
   misconfiguredAgentNames: Set<string>,
+  updateVersion: string | null = null,
+  config: ModmuxConfig | null = null,
 ): TUIState {
   const agents: AgentRow[] = detectionResults.map((r) => {
     let configStatus: AgentConfigStatus = "unconfigured";
@@ -92,11 +109,56 @@ export function buildTUIState(
     };
   });
 
+  const settings = buildSettingsRows(config);
+
   return {
+    mode: "agents",
     serviceState,
     agents,
     cursorIndex: 0,
+    updateVersion,
+    settings,
+    settingsCursorIndex: 0,
   };
+}
+
+/**
+ * Build settings rows from a config object, or use defaults if null.
+ */
+export function buildSettingsRows(
+  config: ModmuxConfig | null,
+): SettingsRow[] {
+  const c = config ?? {
+    updates: { checkEnabled: true, upgradeMethod: "binary" },
+    modelMappingPolicy: "compatible",
+    logLevel: "info",
+  };
+  return [
+    {
+      id: "checkEnabled",
+      label: "Version check",
+      value: c.updates.checkEnabled ? "enabled" : "disabled",
+      options: ["enabled", "disabled"],
+    },
+    {
+      id: "upgradeMethod",
+      label: "Upgrade method",
+      value: c.updates.upgradeMethod,
+      options: ["binary", "mise"],
+    },
+    {
+      id: "modelMappingPolicy",
+      label: "Model policy",
+      value: c.modelMappingPolicy,
+      options: ["compatible", "strict"],
+    },
+    {
+      id: "logLevel",
+      label: "Log level",
+      value: c.logLevel,
+      options: ["debug", "info", "warn", "error"],
+    },
+  ];
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +207,14 @@ export function renderRow(row: AgentRow, isCursor: boolean): string {
  * Clear screen and render the entire TUI to stdout.
  */
 export function renderFull(state: TUIState): void {
+  if (state.mode === "settings") {
+    renderSettings(state);
+  } else {
+    renderAgents(state);
+  }
+}
+
+function renderAgents(state: TUIState): void {
   const { serviceState } = state;
 
   const statusLine = serviceState.running
@@ -167,8 +237,69 @@ export function renderFull(state: TUIState): void {
     ...state.agents.map((row, i) => renderRow(row, i === state.cursorIndex)),
     "",
     DIVIDER,
-    "Space: toggle   Enter: apply   Esc: quit",
   ];
+
+  if (state.updateVersion !== null) {
+    lines.push(
+      colors.yellow(
+        `⬆ Update available: v${state.updateVersion}  —  run 'modmux upgrade'`,
+      ),
+    );
+    lines.push(DIVIDER);
+  }
+
+  lines.push(
+    "Space: toggle   Enter: apply   s: settings   Esc: quit",
+  );
+
+  console.log(lines.join("\n"));
+}
+
+function renderSettings(state: TUIState): void {
+  const { serviceState } = state;
+
+  const statusLine = serviceState.running
+    ? `Status:  Running on http://localhost:${serviceState.port}`
+    : "Status:  Not running";
+  const authLine = serviceState.authStatus === "authenticated"
+    ? "Copilot: Authenticated ✓"
+    : "Copilot: Not authenticated";
+
+  tty.cursorHide.eraseScreen.cursorTo(0, 0)();
+
+  const lines: string[] = [
+    colors.bold.cyan(LOGO),
+    DIVIDER,
+    statusLine,
+    authLine,
+    "",
+    "Settings",
+    DIVIDER,
+  ];
+
+  for (let i = 0; i < state.settings.length; i++) {
+    const row = state.settings[i];
+    const isCursor = i === state.settingsCursorIndex;
+    const cursor = isCursor ? "❯" : " ";
+    const label = row.label.padEnd(20);
+    const valueStr = isCursor ? colors.brightCyan.bold(row.value) : row.value;
+    const line = `${cursor} ${label} ${valueStr}`;
+    lines.push(isCursor ? colors.bold(line) : line);
+  }
+
+  lines.push("");
+  lines.push(DIVIDER);
+
+  if (state.updateVersion !== null) {
+    lines.push(
+      colors.yellow(
+        `⬆ Update available: v${state.updateVersion}  —  run 'modmux upgrade'`,
+      ),
+    );
+    lines.push(DIVIDER);
+  }
+
+  lines.push("←/→: change   Esc: back");
 
   console.log(lines.join("\n"));
 }

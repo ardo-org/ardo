@@ -1,6 +1,8 @@
 import { authenticate, getStoredToken, isTokenValid } from "./auth.ts";
 import { VERSION } from "./version.ts";
 import { upgrade } from "./upgrade.ts";
+import { checkForNewerVersion, maybeNotifyUpdate } from "./update-check.ts";
+import { ensureMiseRestartHook, removeMiseRestartHook } from "./mise-hook.ts";
 import { formatStatus, getServiceState } from "../../gateway/src/status.ts";
 import {
   getDaemonManager,
@@ -8,6 +10,7 @@ import {
 } from "../../gateway/src/managers/mod.ts";
 import { detectAll } from "../../gateway/src/detector.ts";
 import { loadConfig, saveConfig } from "../../gateway/src/store.ts";
+import type { ModmuxConfig } from "../../gateway/src/store.ts";
 import {
   configureAgent,
   isAgentConfigured,
@@ -15,6 +18,7 @@ import {
   verifyAgentConfig,
 } from "../../gateway/src/config.ts";
 import {
+  buildSettingsRows,
   buildTUIState,
   clearScreen,
   renderFull,
@@ -356,7 +360,7 @@ async function cmdModelPolicy(policyArg: string | undefined): Promise<void> {
   console.log(`Model mapping policy set to: ${policyArg}`);
 }
 
-async function runTUI(): Promise<void> {
+async function runTUI(updateVersion: string | null): Promise<void> {
   const [serviceState, config, detectionResults] = await Promise.all([
     getServiceState(),
     loadConfig(),
@@ -381,16 +385,99 @@ async function runTUI(): Promise<void> {
     detectionResults,
     configuredNames,
     misconfiguredNames,
+    updateVersion,
+    config,
   );
+
+  let currentConfig = config;
 
   renderFull(state);
 
   for await (const event of keypress()) {
     const key = mapKey(event);
 
-    if (key === "CtrlC" || key === "Escape") {
+    if (key === "CtrlC") {
       showCursor();
       break;
+    }
+
+    // --- Settings mode ---
+    if (state.mode === "settings") {
+      if (key === "Escape") {
+        state = { ...state, mode: "agents" };
+        renderFull(state);
+        continue;
+      }
+
+      if (key === "Up") {
+        if (state.settingsCursorIndex > 0) {
+          state = {
+            ...state,
+            settingsCursorIndex: state.settingsCursorIndex - 1,
+          };
+          renderFull(state);
+        }
+        continue;
+      }
+
+      if (key === "Down") {
+        if (state.settingsCursorIndex < state.settings.length - 1) {
+          state = {
+            ...state,
+            settingsCursorIndex: state.settingsCursorIndex + 1,
+          };
+          renderFull(state);
+        }
+        continue;
+      }
+
+      if (key === "Left" || key === "Right") {
+        const row = state.settings[state.settingsCursorIndex];
+        const currentIdx = row.options.indexOf(row.value);
+        const len = row.options.length;
+        const nextIdx = key === "Right"
+          ? (currentIdx + 1) % len
+          : (currentIdx - 1 + len) % len;
+        const newValue = row.options[nextIdx];
+
+        const updatedSettings = state.settings.map((s, i) =>
+          i === state.settingsCursorIndex ? { ...s, value: newValue } : s
+        );
+
+        currentConfig = applySettingChange(row.id, newValue, currentConfig);
+        await saveConfig(currentConfig).catch(() => {});
+
+        if (row.id === "upgradeMethod") {
+          if (newValue === "mise") {
+            await ensureMiseRestartHook();
+          } else {
+            await removeMiseRestartHook();
+          }
+        }
+
+        state = { ...state, settings: updatedSettings };
+        renderFull(state);
+        continue;
+      }
+
+      continue;
+    }
+
+    // --- Agents mode ---
+    if (key === "Escape") {
+      showCursor();
+      break;
+    }
+
+    if (key === "Settings") {
+      state = {
+        ...state,
+        mode: "settings",
+        settings: buildSettingsRows(currentConfig),
+        settingsCursorIndex: 0,
+      };
+      renderFull(state);
+      continue;
     }
 
     if (key === "Up") {
@@ -470,6 +557,43 @@ async function runTUI(): Promise<void> {
   }
 }
 
+/**
+ * Apply a single setting change to a config object and return the updated config.
+ */
+function applySettingChange(
+  id: string,
+  value: string,
+  config: ModmuxConfig,
+): ModmuxConfig {
+  switch (id) {
+    case "checkEnabled":
+      return {
+        ...config,
+        updates: { ...config.updates, checkEnabled: value === "enabled" },
+      };
+    case "upgradeMethod":
+      return {
+        ...config,
+        updates: {
+          ...config.updates,
+          upgradeMethod: value as "binary" | "mise",
+        },
+      };
+    case "modelMappingPolicy":
+      return {
+        ...config,
+        modelMappingPolicy: value as "compatible" | "strict",
+      };
+    case "logLevel":
+      return {
+        ...config,
+        logLevel: value as "debug" | "info" | "warn" | "error",
+      };
+    default:
+      return config;
+  }
+}
+
 async function main() {
   const args = Deno.args;
 
@@ -492,6 +616,26 @@ async function main() {
   }
 
   const subcommand = args[0];
+
+  // Reconcile the mise restart hook based on current config. This ensures the
+  // hook stays in sync even if the user edits config.json directly rather than
+  // using the TUI. Runs in the background — never blocks the command.
+  loadConfig().then((cfg) => {
+    if (cfg.updates.upgradeMethod === "mise") {
+      ensureMiseRestartHook();
+    } else {
+      removeMiseRestartHook();
+    }
+  }).catch(() => {});
+
+  // For the TUI, get the update version to display inline.
+  // For all other commands (except upgrade), print the notice to stderr.
+  const isTUI = subcommand === undefined && Deno.stdout.isTerminal();
+  if (subcommand !== "upgrade") {
+    if (!isTUI) {
+      await maybeNotifyUpdate();
+    }
+  }
 
   switch (subcommand) {
     case "start":
@@ -543,7 +687,7 @@ async function main() {
         return;
       }
       // T037: TTY bare invocation → open TUI
-      await runTUI();
+      await runTUI(await checkForNewerVersion());
   }
 }
 

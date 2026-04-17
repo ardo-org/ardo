@@ -129,6 +129,10 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
         autoStart: false,
         preferredPort: 5001,
       },
+      updates: {
+        checkEnabled: false,
+        upgradeMethod: "mise",
+      },
     };
     await saveConfig(config);
     const loaded = await loadConfig();
@@ -146,6 +150,8 @@ Deno.test("saveConfig + loadConfig — round-trip", async () => {
     assertEquals(loaded.githubUsage.cliUrl, "127.0.0.1:4321");
     assertEquals(loaded.githubUsage.autoStart, false);
     assertEquals(loaded.githubUsage.preferredPort, 5001);
+    assertEquals(loaded.updates.checkEnabled, false);
+    assertEquals(loaded.updates.upgradeMethod, "mise");
   });
 });
 
@@ -331,5 +337,70 @@ Deno.test("loadConfig — GitHub usage env overrides file/default", async () => 
       Deno.env.delete("MODMUX_GITHUB_USAGE_AUTO_START");
       Deno.env.delete("MODMUX_GITHUB_USAGE_PREFERRED_PORT");
     }
+  });
+});
+
+Deno.test("loadConfig — returns default updates config on first run", async () => {
+  await withTempHome(async () => {
+    const config = await loadConfig();
+    assertEquals(config.updates.checkEnabled, true);
+    assertEquals(config.updates.upgradeMethod, "binary");
+  });
+});
+
+Deno.test("loadConfig — MODMUX_UPDATE_CHECK_ENABLED overrides default", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("MODMUX_UPDATE_CHECK_ENABLED", "false");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.updates.checkEnabled, false);
+    } finally {
+      Deno.env.delete("MODMUX_UPDATE_CHECK_ENABLED");
+    }
+  });
+});
+
+Deno.test("loadConfig — MODMUX_UPGRADE_METHOD overrides default", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("MODMUX_UPGRADE_METHOD", "mise");
+    try {
+      const loaded = await loadConfig();
+      assertEquals(loaded.updates.upgradeMethod, "mise");
+    } finally {
+      Deno.env.delete("MODMUX_UPGRADE_METHOD");
+    }
+  });
+});
+
+Deno.test("loadConfig — throws on invalid MODMUX_UPDATE_CHECK_ENABLED", async () => {
+  await withTempHome(async () => {
+    Deno.env.set("MODMUX_UPDATE_CHECK_ENABLED", "yes");
+    try {
+      await assertRejects(
+        () => loadConfig(),
+        Error,
+        "Invalid MODMUX_UPDATE_CHECK_ENABLED value",
+      );
+    } finally {
+      Deno.env.delete("MODMUX_UPDATE_CHECK_ENABLED");
+    }
+  });
+});
+
+Deno.test("saveConfig — rejects invalid updates.upgradeMethod", async () => {
+  await withTempHome(async () => {
+    await assertRejects(
+      () =>
+        saveConfig({
+          ...DEFAULT_CONFIG,
+          updates: {
+            checkEnabled: true,
+            upgradeMethod:
+              "homebrew" as unknown as ModmuxConfig["updates"]["upgradeMethod"],
+          },
+        }),
+      Error,
+      "Invalid updates.upgradeMethod",
+    );
   });
 });

@@ -1,4 +1,6 @@
 import { VERSION } from "./version.ts";
+import { loadConfig } from "../../gateway/src/store.ts";
+import { ensureMiseRestartHook } from "./mise-hook.ts";
 
 const REPO = "modmux/modmux";
 const GITHUB_API = `https://api.github.com/repos/${REPO}/releases/latest`;
@@ -25,7 +27,23 @@ interface GithubRelease {
   assets: ReleaseAsset[];
 }
 
-export async function upgrade(): Promise<void> {
+async function upgradeMise(): Promise<void> {
+  await ensureMiseRestartHook();
+  console.log("Upgrading via mise...");
+  const proc = new Deno.Command("mise", {
+    args: ["upgrade", "modmux"],
+    stdin: "inherit",
+    stdout: "inherit",
+    stderr: "inherit",
+  });
+  const status = await proc.spawn().status;
+  if (!status.success) {
+    console.error(`Error: mise upgrade exited with code ${status.code}`);
+    Deno.exit(status.code ?? 1);
+  }
+}
+
+async function upgradeBinary(): Promise<void> {
   const assetName = detectAssetName();
   if (!assetName) {
     console.error(
@@ -111,4 +129,15 @@ export async function upgrade(): Promise<void> {
   }
 
   console.log(`Modmux upgraded to ${latestTag}.`);
+}
+
+export async function upgrade(): Promise<void> {
+  const config = await loadConfig().catch(() => null);
+  const method = config?.updates?.upgradeMethod ?? "binary";
+
+  if (method === "mise") {
+    await upgradeMise();
+  } else {
+    await upgradeBinary();
+  }
 }
