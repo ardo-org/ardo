@@ -23,7 +23,7 @@ export const DEFAULT_MODEL_MAP: Record<string, string> = {
   "gpt-4": "gpt-4",
   "gpt-3.5-turbo": "gpt-3.5-turbo",
   // GPT-5/Codex aliases mapped to chat-compatible Copilot IDs.
-  "gpt-5.4": "gpt-4.1-copilot",
+  // Only kept for models Copilot does NOT natively expose.
   "gpt-5.3-codex": "gpt-4.1-copilot",
   "gpt-5.2-codex": "gpt-4.1-2025-04-14",
   "gpt-5.1-codex": "gpt-4.1",

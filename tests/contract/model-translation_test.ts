@@ -19,8 +19,8 @@ Deno.test("model translation — codex-mini-latest maps to gpt-4o-mini", () => {
   assertEquals(resolveModel("codex-mini-latest"), "gpt-4o-mini");
 });
 
-Deno.test("model translation — gpt-5.4 maps to gpt-4.1-copilot", () => {
-  assertEquals(resolveModel("gpt-5.4"), "gpt-4.1-copilot");
+Deno.test("model translation — gpt-5.4 passes through unchanged (Copilot supports it natively)", () => {
+  assertEquals(resolveModel("gpt-5.4"), "gpt-5.4");
 });
 
 Deno.test("model translation — unknown model passes through unchanged", () => {

@@ -120,6 +120,26 @@ export async function resolveModelForEndpoint(
     };
   }
 
+  // If the exact model (or a direct alias) is available in the live model
+  // list, use it — even for gpt-5.x families that Copilot now supports natively.
+  if (usesChatCompletionsBackend && available.has(requestedModel)) {
+    return {
+      requestedModel,
+      resolvedModel: requestedModel,
+      strategy: "exact",
+    };
+  }
+  if (
+    usesChatCompletionsBackend && aliasResolved !== requestedModel &&
+    available.has(aliasResolved)
+  ) {
+    return {
+      requestedModel,
+      resolvedModel: aliasResolved,
+      strategy: "alias-or-normalized",
+    };
+  }
+
   if (!usesChatCompletionsBackend) {
     const direct = pickFirstAvailable(directCandidates, available);
     if (direct) {
