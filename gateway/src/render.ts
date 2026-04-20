@@ -72,6 +72,8 @@ export interface TUIState {
   agents: AgentRow[];
   /** Index of the cursor row (0-based into agents array). */
   cursorIndex: number;
+  /** Currently running modmux version shown in the TUI header. */
+  installedVersion: string;
   /** Newer version string if an update is available, null otherwise. */
   updateVersion: string | null;
   settings: SettingsRow[];
@@ -90,6 +92,7 @@ export function buildTUIState(
   detectionResults: DetectionResult[],
   configuredAgentNames: Set<string>,
   misconfiguredAgentNames: Set<string>,
+  installedVersion: string,
   updateVersion: string | null = null,
   config: ModmuxConfig | null = null,
 ): TUIState {
@@ -116,6 +119,7 @@ export function buildTUIState(
     serviceState,
     agents,
     cursorIndex: 0,
+    installedVersion,
     updateVersion,
     settings,
     settingsCursorIndex: 0,
@@ -214,6 +218,7 @@ function renderAgents(state: TUIState): void {
   const statusLine = serviceState.running
     ? `Status:  Running on http://localhost:${serviceState.port}`
     : "Status:  Not running";
+  const versionLine = `Version: v${state.installedVersion}`;
   const authLine = serviceState.authStatus === "authenticated"
     ? "Copilot: Authenticated ✓"
     : "Copilot: Not authenticated";
@@ -224,6 +229,7 @@ function renderAgents(state: TUIState): void {
     colors.bold.cyan(LOGO),
     DIVIDER,
     statusLine,
+    versionLine,
     authLine,
     "",
     "Agents",
@@ -255,6 +261,7 @@ function renderSettings(state: TUIState): void {
   const statusLine = serviceState.running
     ? `Status:  Running on http://localhost:${serviceState.port}`
     : "Status:  Not running";
+  const versionLine = `Version: v${state.installedVersion}`;
   const authLine = serviceState.authStatus === "authenticated"
     ? "Copilot: Authenticated ✓"
     : "Copilot: Not authenticated";
@@ -265,6 +272,7 @@ function renderSettings(state: TUIState): void {
     colors.bold.cyan(LOGO),
     DIVIDER,
     statusLine,
+    versionLine,
     authLine,
     "",
     "Settings",

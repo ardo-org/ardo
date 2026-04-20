@@ -386,6 +386,7 @@ async function runTUI(updateVersion: string | null): Promise<void> {
     detectionResults,
     configuredNames,
     misconfiguredNames,
+    VERSION,
     updateVersion,
     config,
   );
