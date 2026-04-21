@@ -213,6 +213,12 @@ h3 {
   font-size: 1.12rem;
 }
 
+.hero-note {
+  margin: 0 0 18px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
 .hero-actions {
   display: flex;
   flex-wrap: wrap;
@@ -290,6 +296,7 @@ h3 {
 
 .hero-panel,
 .info-card,
+.proof-card,
 .flow-node,
 .install-card,
 .faq-list details {
@@ -393,8 +400,20 @@ h3 {
 }
 
 .info-card,
+.proof-card,
 .install-card {
   padding: 26px;
+}
+
+.proof-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.proof-result {
+  margin: 0;
+  color: var(--text-muted);
 }
 
 .install-grid {
@@ -612,6 +631,7 @@ h3 {
 @media (max-width: 980px) {
   .hero,
   .card-grid.three-up,
+  .proof-grid,
   .install-grid,
   .flow-board {
     grid-template-columns: 1fr;
@@ -672,6 +692,7 @@ h3 {
 
   .hero-panel,
   .info-card,
+  .proof-card,
   .flow-node,
   .install-card,
   .faq-list details {

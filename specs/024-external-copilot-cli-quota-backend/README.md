@@ -35,7 +35,7 @@ and shutdown."
 
 ## Design
 
-Extend the existing `githubUsage` configuration so Modmux can manage a Copilot
+Extend the existing `copilotSdk` configuration so Modmux can manage a Copilot
 CLI sidecar rather than only consuming a manually managed `cliUrl`.
 
 When sidecar management is enabled, Modmux should:
@@ -75,7 +75,7 @@ User-facing states should remain explicit:
       invalid-token scenarios in `/v1/usage` and `formatStatus()` output.
 - [x] Document how users configure and run the external quota backend as a
       supported feature.
-- [x] Extend `githubUsage` config with sidecar lifecycle settings, including
+- [x] Extend `copilotSdk` config with sidecar lifecycle settings, including
       auto-start enablement and preferred Copilot CLI port.
 - [x] Create a Copilot CLI sidecar manager for free-port discovery, detached
       spawn, PID/port metadata, and shutdown.
@@ -118,10 +118,10 @@ Validation from the first phase passed for `deno lint`, `deno check`, and
 `deno test --allow-all`, while repo-wide `deno fmt --check` remained blocked by
 unrelated pre-existing formatting churn elsewhere in the worktree.
 
-Sidecar phase update: Modmux now supports `githubUsage.autoStart` and
-`githubUsage.preferredPort`, starts a managed headless Copilot CLI sidecar
-during startup, persists sidecar PID/port metadata, resolves the effective
-sidecar port for quota lookups, and stops the sidecar during shutdown.
-Validation passed for `deno lint`, `deno check`, and `deno test --allow-all`;
-`deno task quality` remains blocked by unrelated pre-existing `deno fmt --check`
-failures elsewhere in the worktree.
+Sidecar phase update: Modmux now supports `copilotSdk.autoStart` and
+`copilotSdk.preferredPort`, starts a managed headless Copilot CLI sidecar during
+startup, persists sidecar PID/port metadata, resolves the effective sidecar port
+for quota lookups, and stops the sidecar during shutdown. Validation passed for
+`deno lint`, `deno check`, and `deno test --allow-all`; `deno task quality`
+remains blocked by unrelated pre-existing `deno fmt --check` failures elsewhere
+in the worktree.

@@ -12,6 +12,7 @@ Website: https://modmux.dev/
 - Supports Anthropic-compatible and OpenAI-compatible APIs
 - Supports Claude Code, Cline, and Codex
 - Keeps configuration reversible with `modmux unconfigure`
+- Tracks GitHub Copilot quota usage out of the box
 - Exposes status, health, usage, and model discovery endpoints
 
 ## Install

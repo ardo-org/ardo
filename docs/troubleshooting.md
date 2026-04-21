@@ -113,7 +113,7 @@ For the managed sidecar path, confirm `~/.modmux/config.json` includes:
 
 ```json
 {
-  "githubUsage": {
+  "copilotSdk": {
     "backend": "external-cli",
     "autoStart": true,
     "preferredPort": 4321
@@ -130,7 +130,7 @@ tail -50 ~/.modmux/modmux.log
 ```
 
 If you are using a manual external Copilot CLI server instead, make sure that
-server is already listening on the configured `githubUsage.cliUrl`.
+server is already listening on the configured `copilotSdk.cliUrl`.
 
 ## Reset the local setup
 
