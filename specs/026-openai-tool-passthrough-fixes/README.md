@@ -1,7 +1,13 @@
 ---
-title: "OpenAI Tool Passthrough Fixes"
-status: pending
-created: "2026-04-16"
+status: complete
+created: 2026-04-16
+created_at: 2026-04-24T02:44:41.961395Z
+updated_at: 2026-04-24T02:44:41.961395Z
+completed_at: 2026-04-24T02:44:41.961395Z
+transitions:
+- status: complete
+  at: 2026-04-24T02:44:41.961395Z
+title: OpenAI Tool Passthrough Fixes
 ---
 
 # OpenAI Tool Passthrough Fixes
