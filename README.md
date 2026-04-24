@@ -94,7 +94,9 @@ GET  /health
 
 Modmux is under active development. Below are completed and planned features:
 
-### Foundation (Complete)
+<details>
+<summary>📖 Foundation (Complete)</summary>
+
 Core infrastructure that powers the local gateway:
 
 | Feature | Specs | Impact |
@@ -105,7 +107,11 @@ Core infrastructure that powers the local gateway:
 | **Usage & Observability** | 011, 023 | Status commands, real-time quota tracking |
 | **Cross-Platform Support** | 012 | Windows, macOS, Linux service abstraction |
 
-### Current (Complete)
+</details>
+
+<details>
+<summary>📖 Current (Complete)</summary>
+
 Recently shipped features and improvements:
 
 | Feature | Specs | Impact |
@@ -114,7 +120,11 @@ Recently shipped features and improvements:
 | **Tool Passthrough** | 026 | Fixed OpenAI tool compatibility |
 | **Release Workflow** | 025 | Conventional commits for release notes |
 
-### Upcoming (Planned)
+</details>
+
+<details>
+<summary>📖 Upcoming (Planned)</summary>
+
 Next phase of development:
 
 | Feature | Specs | Impact |
@@ -125,6 +135,8 @@ Next phase of development:
 | **Cost Visibility** | 030 | Estimate usage and cost in `modmux status` |
 
 For more detail, see the [specs folder](./specs) and [contribution guide](./CONTRIBUTING.md).
+
+</details>
 
 ## Docs
 
